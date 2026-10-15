@@ -2,10 +2,35 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
+function sanitizeFileName(originalName: string): string {
+  const lastDot = originalName.lastIndexOf('.');
+  let base = originalName;
+  let ext = '';
+
+  if (lastDot > 0) {
+    base = originalName.slice(0, lastDot);
+    ext = originalName.slice(lastDot);
+  }
+
+  // Replace spaces and special characters with underscores
+  const cleanBase = base.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  const cleanExt = ext.replace(/[^a-zA-Z0-9._-]/g, '');
+
+  return `${Date.now()}_${cleanBase || 'file'}${cleanExt}`;
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 export default function RequestComponentPage() {
   const [componentName, setComponentName] = useState('');
   const [description, setDescription] = useState('');
   const [file, setFile] = useState<File | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(Date.now());
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -15,25 +40,26 @@ export default function RequestComponentPage() {
     setMessage('');
 
     try {
-      let fileUrl = null;
+      let fileUrl: string | null = null;
 
-      // 1. Upload file if exists
+      // 1. Sanitize file name and upload file if present
       if (file) {
-        const fileName = `${Date.now()}_${file.name}`;
+        const fileName = sanitizeFileName(file.name);
         const { error: uploadError } = await supabase.storage
           .from('request_files')
           .upload(fileName, file);
-          
+
         if (uploadError) throw uploadError;
 
+        // 2. Retrieve the complete, exact public URL from Supabase
         const { data: publicUrlData } = supabase.storage
           .from('request_files')
           .getPublicUrl(fileName);
-        
+
         fileUrl = publicUrlData.publicUrl;
       }
 
-      // 2. Insert into database
+      // 3. Insert into database
       const { error: dbError } = await supabase
         .from('component_requests')
         .insert([
@@ -46,31 +72,87 @@ export default function RequestComponentPage() {
 
       if (dbError) throw dbError;
 
-      // 3. Send Telegram Notification
+      // 4. Send Telegram Notification
       const telegramBotToken = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN;
       const telegramChatId = process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID;
 
       if (telegramBotToken && telegramChatId) {
-        await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: telegramChatId,
-            text: `🚀 *New Component Request!*\n\n📌 *Name:* ${componentName}\n📝 *Details:* ${description}\n📂 *File:* ${fileUrl ? fileUrl : 'No file attached'}`,
-            parse_mode: 'Markdown'
-          }),
-        }).catch((err) => console.error("Telegram notification failed:", err));
+        const safeName = escapeHtml(componentName);
+        const safeDesc = escapeHtml(description);
+
+        const textMessage = fileUrl
+          ? `🚀 <b>New Component Request!</b>\n\n` +
+            `📌 <b>Name:</b> ${safeName}\n` +
+            `📝 <b>Details:</b> ${safeDesc}\n\n` +
+            `📂 <b>Attachment:</b> <a href="${fileUrl.replace(/&/g, '&amp;')}">${escapeHtml(file?.name || 'Download / View Attachment')}</a>\n` +
+            `🔗 <b>Direct Link:</b> ${fileUrl}`
+          : `🚀 <b>New Component Request!</b>\n\n` +
+            `📌 <b>Name:</b> ${safeName}\n` +
+            `📝 <b>Details:</b> ${safeDesc}\n\n` +
+            `📂 <b>Attachment:</b> None`;
+
+        let sent = false;
+
+        // If an attachment is uploaded, try sending via Telegram's photo/document API for inline preview
+        if (fileUrl && file) {
+          const isPhoto = /\.(jpe?g|png|webp|gif|bmp)$/i.test(file.name) ||
+                          (file.type.startsWith('image/') && !file.type.includes('svg'));
+          const endpoint = isPhoto ? 'sendPhoto' : 'sendDocument';
+          const mediaKey = isPhoto ? 'photo' : 'document';
+
+          // Telegram captions are limited to 1024 characters
+          if (textMessage.length <= 1024) {
+            try {
+              const res = await fetch(`https://api.telegram.org/bot${telegramBotToken}/${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chat_id: telegramChatId,
+                  [mediaKey]: fileUrl,
+                  caption: textMessage,
+                  parse_mode: 'HTML',
+                }),
+              });
+              const resData = await res.json();
+              if (resData.ok) {
+                sent = true;
+              } else {
+                console.warn(`Telegram ${endpoint} returned non-ok response, falling back:`, resData);
+              }
+            } catch (mediaErr) {
+              console.warn(`Telegram ${endpoint} error, falling back to sendMessage:`, mediaErr);
+            }
+          }
+        }
+
+        // Fallback or default: send standard sendMessage
+        if (!sent) {
+          await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: telegramChatId,
+              text: textMessage,
+              parse_mode: 'HTML',
+            }),
+          }).catch((err) => console.error("Telegram notification failed:", err));
+        }
       }
 
       setMessage('Request submitted successfully! We will process it soon.');
       setComponentName('');
       setDescription('');
       setFile(null);
-    } catch (err: any) {
+      setFileInputKey(Date.now());
+    } catch (err: unknown) {
       console.error(err);
-      setMessage(`Error submitting request: ${err.message}`);
+      if (err instanceof Error) {
+        setMessage(`Error submitting request: ${err.message}`);
+      } else {
+        setMessage('An unknown error occurred while submitting request.');
+      }
     }
-    
+
     setLoading(false);
   };
 
@@ -100,7 +182,7 @@ export default function RequestComponentPage() {
 
         <div className="pt-6 border-t border-slate-100">
           <label className="block text-sm font-bold text-slate-700 mb-3 tracking-wide uppercase">Attach Datasheet / Image (Optional)</label>
-          <input type="file" onChange={e => setFile(e.target.files?.[0] || null)} className="w-full text-sm text-slate-500 file:mr-5 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer transition-colors" />
+          <input key={fileInputKey} type="file" onChange={e => setFile(e.target.files?.[0] || null)} className="w-full text-sm text-slate-500 file:mr-5 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer transition-colors" />
         </div>
 
         <button type="submit" disabled={loading} className="w-full py-5 mt-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-lg tracking-wide rounded-xl shadow-xl shadow-blue-600/20 transition-all disabled:opacity-50 active:scale-95">
