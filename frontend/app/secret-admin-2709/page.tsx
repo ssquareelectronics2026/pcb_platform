@@ -21,6 +21,7 @@ interface ComponentRequestRecord {
   component_name: string;
   description: string;
   user_email?: string | null;
+  component_link?: string | null;
   file_url?: string | null;
   status?: string | null;
   created_at?: string | null;
@@ -286,7 +287,11 @@ export default function AdminDashboard() {
 
   const handlePrefillUpload = (req: ComponentRequestRecord) => {
     setName(req.component_name);
-    setDescription(req.description ? `Requested by ${req.user_email || 'user'}: ${req.description}` : '');
+    let desc = req.description ? `Requested by ${req.user_email || 'user'}: ${req.description}` : `Requested by ${req.user_email || 'user'}`;
+    if (req.component_link) {
+      desc = desc ? `${desc}\n\nReference Link: ${req.component_link}` : `Reference Link: ${req.component_link}`;
+    }
+    setDescription(desc);
     setTags('Requested');
     setAdminSection('catalog');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -635,6 +640,21 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                   </div>
+
+                  {req.component_link && (
+                    <div className="mb-3">
+                      <a
+                        href={req.component_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-800 bg-blue-50/80 hover:bg-blue-100 px-3.5 py-2 rounded-xl border border-blue-200 transition-colors"
+                      >
+                        <span>🔗 Reference Link:</span>
+                        <span className="underline truncate max-w-md">{req.component_link}</span>
+                        <span className="text-xs">↗</span>
+                      </a>
+                    </div>
+                  )}
 
                   {req.description && (
                     <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-100 text-slate-700 text-sm whitespace-pre-wrap mb-3 font-medium">

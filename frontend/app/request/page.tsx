@@ -29,6 +29,7 @@ function escapeHtml(text: string): string {
 export default function RequestComponentPage() {
   const [componentName, setComponentName] = useState('');
   const [userEmail, setUserEmail] = useState('');
+  const [componentLink, setComponentLink] = useState('');
   const [description, setDescription] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [fileInputKey, setFileInputKey] = useState(Date.now());
@@ -40,10 +41,54 @@ export default function RequestComponentPage() {
     setLoading(true);
     setMessage('');
 
+    const trimmedName = componentName.trim();
+    const trimmedEmail = userEmail.trim();
+    let trimmedLink = componentLink.trim();
+    const trimmedDesc = description.trim();
+
+    // 1. Validate required identity fields
+    if (!trimmedName) {
+      setMessage('Error: Please enter the Component Name or Part Number.');
+      setLoading(false);
+      return;
+    }
+
+    if (!trimmedEmail) {
+      setMessage('Error: Please enter your Email Address so we can notify you when completed.');
+      setLoading(false);
+      return;
+    }
+
+    // 2. Validate and format Reference Link if provided
+    if (trimmedLink) {
+      if (!/^https?:\/\//i.test(trimmedLink)) {
+        trimmedLink = `https://${trimmedLink}`;
+      }
+      try {
+        new URL(trimmedLink);
+      } catch {
+        setMessage('Error: The provided Component Link is not a valid URL. Please check the URL format and try again.');
+        setLoading(false);
+        return;
+      }
+    }
+
+    // 3. Smart Conditional Validation:
+    // Must provide at least EITHER a Link OR a File OR a Description
+    const hasLink = Boolean(trimmedLink);
+    const hasDescription = Boolean(trimmedDesc);
+    const hasFile = Boolean(file);
+
+    if (!hasLink && !hasDescription && !hasFile) {
+      setMessage('Error: Please provide at least one source of component details — either a Reference Link (URL), a Description, or attach a Datasheet/Image.');
+      setLoading(false);
+      return;
+    }
+
     try {
       let fileUrl: string | null = null;
 
-      // 1. Sanitize file name and upload file if present
+      // 4. Sanitize file name and upload file if present
       if (file) {
         const fileName = sanitizeFileName(file.name);
         const { error: uploadError } = await supabase.storage
@@ -52,7 +97,7 @@ export default function RequestComponentPage() {
 
         if (uploadError) throw uploadError;
 
-        // 2. Retrieve the complete, exact public URL from Supabase
+        // Retrieve the complete public URL from Supabase
         const { data: publicUrlData } = supabase.storage
           .from('request_files')
           .getPublicUrl(fileName);
@@ -60,41 +105,68 @@ export default function RequestComponentPage() {
         fileUrl = publicUrlData.publicUrl;
       }
 
-      // 3. Insert into database with user_email and status
+      // 5. Insert into database with user_email, component_link, and status
       const { error: dbError } = await supabase
         .from('component_requests')
         .insert([
           {
-            component_name: componentName,
-            user_email: userEmail,
-            description,
+            component_name: trimmedName,
+            user_email: trimmedEmail,
+            component_link: trimmedLink || null,
+            description: trimmedDesc,
             file_url: fileUrl,
             status: 'Pending',
           },
         ]);
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        // Graceful fallback if component_link column is not yet migrated in Supabase
+        if (dbError.message?.includes('component_link')) {
+          console.warn('Column component_link not found, falling back to embedding link in description.');
+          const fallbackDesc = trimmedLink 
+            ? (trimmedDesc ? `${trimmedDesc}\n\nReference Link: ${trimmedLink}` : `Reference Link: ${trimmedLink}`)
+            : trimmedDesc;
 
-      // 4. Send Telegram Notification
+          const { error: fallbackError } = await supabase
+            .from('component_requests')
+            .insert([
+              {
+                component_name: trimmedName,
+                user_email: trimmedEmail,
+                description: fallbackDesc,
+                file_url: fileUrl,
+                status: 'Pending',
+              },
+            ]);
+          if (fallbackError) throw fallbackError;
+        } else {
+          throw dbError;
+        }
+      }
+
+      // 6. Send Telegram Notification
       const telegramBotToken = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN;
       const telegramChatId = process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID;
 
       if (telegramBotToken && telegramChatId) {
-        const safeName = escapeHtml(componentName);
-        const safeEmail = escapeHtml(userEmail);
-        const safeDesc = escapeHtml(description);
+        const safeName = escapeHtml(trimmedName);
+        const safeEmail = escapeHtml(trimmedEmail);
+        const safeLink = trimmedLink ? escapeHtml(trimmedLink) : '';
+        const safeDesc = escapeHtml(trimmedDesc);
 
         const textMessage = fileUrl
           ? `🚀 <b>New Component Request!</b>\n\n` +
             `📌 <b>Name:</b> ${safeName}\n` +
             `📧 <b>Email:</b> ${safeEmail}\n` +
-            `📝 <b>Details:</b> ${safeDesc}\n\n` +
+            (safeLink ? `🔗 <b>Reference Link:</b> <a href="${safeLink}">${safeLink}</a>\n` : '') +
+            `📝 <b>Details:</b> ${safeDesc || (safeLink ? 'Reference URL provided above' : 'None provided')}\n\n` +
             `📂 <b>Attachment:</b> <a href="${fileUrl.replace(/&/g, '&amp;')}">${escapeHtml(file?.name || 'Download / View Attachment')}</a>\n` +
             `🔗 <b>Direct Link:</b> ${fileUrl}`
           : `🚀 <b>New Component Request!</b>\n\n` +
             `📌 <b>Name:</b> ${safeName}\n` +
             `📧 <b>Email:</b> ${safeEmail}\n` +
-            `📝 <b>Details:</b> ${safeDesc}\n\n` +
+            (safeLink ? `🔗 <b>Reference Link:</b> <a href="${safeLink}">${safeLink}</a>\n` : '') +
+            `📝 <b>Details:</b> ${safeDesc || (safeLink ? 'Reference URL provided above' : 'None provided')}\n\n` +
             `📂 <b>Attachment:</b> None`;
 
         let sent = false;
@@ -106,7 +178,6 @@ export default function RequestComponentPage() {
           const endpoint = isPhoto ? 'sendPhoto' : 'sendDocument';
           const mediaKey = isPhoto ? 'photo' : 'document';
 
-          // Telegram captions are limited to 1024 characters
           if (textMessage.length <= 1024) {
             try {
               const res = await fetch(`https://api.telegram.org/bot${telegramBotToken}/${endpoint}`, {
@@ -148,6 +219,7 @@ export default function RequestComponentPage() {
       setMessage('Request submitted successfully! We will email you once your component is ready.');
       setComponentName('');
       setUserEmail('');
+      setComponentLink('');
       setDescription('');
       setFile(null);
       setFileInputKey(Date.now());
@@ -163,11 +235,23 @@ export default function RequestComponentPage() {
     setLoading(false);
   };
 
+  const hasLinkInput = Boolean(componentLink.trim());
+  const hasDescInput = Boolean(description.trim());
+  const hasFileInput = Boolean(file);
+
   return (
     <div className="max-w-3xl mx-auto py-12 px-4 animate-in fade-in duration-500 relative z-10">
-      <div className="text-center mb-10">
+      <div className="text-center mb-8">
         <h1 className="text-4xl font-black tracking-tight mb-3 text-slate-900">Request a Component</h1>
-        <p className="text-slate-500 font-medium text-lg">Can't find what you need? Send us a request and we'll design it.</p>
+        <p className="text-slate-500 font-medium text-lg">Can't find what you need? Send us a request and we'll design the footprint & symbol.</p>
+      </div>
+
+      {/* Smart Helper Banner */}
+      <div className="bg-blue-50/70 border border-blue-200/80 rounded-2xl p-4 mb-8 text-sm text-blue-900 flex items-start gap-3">
+        <span className="text-xl">💡</span>
+        <div className="leading-relaxed">
+          <span className="font-bold">Flexible Submission:</span> Provide a product/datasheet <strong>Reference URL</strong>, <em>or</em> write specific <strong>Details</strong>, <em>or</em> attach a <strong>Datasheet/Photo</strong>. Any one of the three is enough!
+        </div>
       </div>
 
       {message && (
@@ -176,14 +260,31 @@ export default function RequestComponentPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white border border-slate-200 p-8 md:p-10 rounded-[2.5rem] shadow-xl shadow-slate-200/50 space-y-8">
+      <form onSubmit={handleSubmit} className="bg-white border border-slate-200 p-8 md:p-10 rounded-[2.5rem] shadow-xl shadow-slate-200/50 space-y-7">
+        {/* Component Name */}
         <div>
-          <label className="block text-sm font-bold text-slate-700 mb-3 tracking-wide uppercase">Component Name / Part Number</label>
-          <input type="text" value={componentName} onChange={e => setComponentName(e.target.value)} required className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all" placeholder="e.g. ATmega328P-AU" />
+          <div className="flex justify-between items-center mb-2.5">
+            <label className="block text-sm font-bold text-slate-700 tracking-wide uppercase">
+              Component Name / Part Number <span className="text-red-500">*</span>
+            </label>
+          </div>
+          <input 
+            type="text" 
+            value={componentName} 
+            onChange={e => setComponentName(e.target.value)} 
+            required 
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all" 
+            placeholder="e.g. ATmega328P-AU or ESP32-WROOM-32D" 
+          />
         </div>
 
+        {/* User Email */}
         <div>
-          <label className="block text-sm font-bold text-slate-700 mb-3 tracking-wide uppercase">Your Email Address</label>
+          <div className="flex justify-between items-center mb-2.5">
+            <label className="block text-sm font-bold text-slate-700 tracking-wide uppercase">
+              Your Email Address <span className="text-red-500">*</span>
+            </label>
+          </div>
           <input 
             type="email" 
             value={userEmail} 
@@ -192,20 +293,71 @@ export default function RequestComponentPage() {
             className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all" 
             placeholder="e.g. engineer@example.com" 
           />
-          <p className="text-xs text-slate-400 mt-2 ml-1">We will notify you by email as soon as this component is created and uploaded!</p>
+          <p className="text-xs text-slate-400 mt-2 ml-1">We will automatically send you an email as soon as this component is ready for download!</p>
         </div>
 
+        {/* Component Link / Reference URL */}
+        <div className="pt-4 border-t border-slate-100">
+          <div className="flex justify-between items-center mb-2.5">
+            <label className="block text-sm font-bold text-slate-700 tracking-wide uppercase">
+              Component Link / Reference URL
+            </label>
+            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${hasLinkInput ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+              {hasLinkInput ? '✓ URL provided' : 'Optional if description/file given'}
+            </span>
+          </div>
+          <input 
+            type="text" 
+            value={componentLink} 
+            onChange={e => setComponentLink(e.target.value)} 
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all" 
+            placeholder="e.g. https://www.lcsc.com/product-detail/... or Mouser/DigiKey URL" 
+          />
+          <p className="text-xs text-slate-400 mt-2 ml-1">Direct link to LCSC, Mouser, DigiKey, or official manufacturer datasheet.</p>
+        </div>
+
+        {/* Details & Requirements */}
         <div>
-          <label className="block text-sm font-bold text-slate-700 mb-3 tracking-wide uppercase">Details & Requirements</label>
-          <textarea value={description} onChange={e => setDescription(e.target.value)} required rows={4} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all" placeholder="Tell us about the specific package type, dimensions, or variations you need..."></textarea>
+          <div className="flex justify-between items-center mb-2.5">
+            <label className="block text-sm font-bold text-slate-700 tracking-wide uppercase">
+              Details & Requirements
+            </label>
+            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${hasDescInput ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+              {hasDescInput ? '✓ Details provided' : (hasLinkInput || hasFileInput ? 'Optional' : 'Required if no link/file')}
+            </span>
+          </div>
+          <textarea 
+            value={description} 
+            onChange={e => setDescription(e.target.value)} 
+            rows={4} 
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all" 
+            placeholder="Tell us about the specific package type (e.g. SOIC-8, QFN-32), dimensions, pinout requirements, or special variations..."
+          ></textarea>
         </div>
 
-        <div className="pt-6 border-t border-slate-100">
-          <label className="block text-sm font-bold text-slate-700 mb-3 tracking-wide uppercase">Attach Datasheet / Image (Optional)</label>
-          <input key={fileInputKey} type="file" onChange={e => setFile(e.target.files?.[0] || null)} className="w-full text-sm text-slate-500 file:mr-5 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer transition-colors" />
+        {/* File Upload */}
+        <div className="pt-4 border-t border-slate-100">
+          <div className="flex justify-between items-center mb-2.5">
+            <label className="block text-sm font-bold text-slate-700 tracking-wide uppercase">
+              Attach Datasheet / Image (Optional)
+            </label>
+            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${hasFileInput ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+              {hasFileInput ? '✓ File selected' : 'Optional'}
+            </span>
+          </div>
+          <input 
+            key={fileInputKey} 
+            type="file" 
+            onChange={e => setFile(e.target.files?.[0] || null)} 
+            className="w-full text-sm text-slate-500 file:mr-5 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer transition-colors" 
+          />
         </div>
 
-        <button type="submit" disabled={loading} className="w-full py-5 mt-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-lg tracking-wide rounded-xl shadow-xl shadow-blue-600/20 transition-all disabled:opacity-50 active:scale-95">
+        <button 
+          type="submit" 
+          disabled={loading} 
+          className="w-full py-5 mt-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-lg tracking-wide rounded-xl shadow-xl shadow-blue-600/20 transition-all disabled:opacity-50 active:scale-95"
+        >
           {loading ? 'Submitting Request...' : 'Send Request'}
         </button>
       </form>
