@@ -538,7 +538,15 @@ export default function AdminDashboard() {
           <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <div>
               <h2 className="text-2xl font-black text-slate-900">User Component Requests</h2>
-              <p className="text-slate-500 text-sm mt-1">Review requests from users, upload files, and send completion notification emails.</p>
+              <p className="text-slate-500 text-sm mt-1">
+                Review requests from users, upload files, and send completion notification emails (support:{' '}
+                <a
+                  href="mailto:ssquareelectronics2026@gmail.com?subject=Regarding%20PCB%20Component%20Request"
+                  className="text-blue-600 hover:underline font-semibold"
+                >
+                  ssquareelectronics2026@gmail.com
+                </a>).
+              </p>
             </div>
             
             <div className="flex gap-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200">

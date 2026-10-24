@@ -30,8 +30,17 @@ export default function RootLayout({
             {children}
           </div>
         </main>
-        <footer className="border-t border-slate-200 py-8 text-center text-slate-400 text-sm font-medium bg-white/50 backdrop-blur-sm">
-          &copy; {new Date().getFullYear()} ComponentHub. Built for Electronic Engineers.
+        <footer className="border-t border-slate-200 py-8 text-center text-slate-400 text-sm font-medium bg-white/50 backdrop-blur-sm space-y-2">
+          <p>
+            Questions or custom component requests? Contact us at{' '}
+            <a
+              href="mailto:ssquareelectronics2026@gmail.com?subject=Regarding%20PCB%20Component%20Request"
+              className="text-blue-600 hover:text-blue-700 font-semibold underline transition-colors"
+            >
+              ssquareelectronics2026@gmail.com
+            </a>
+          </p>
+          <p>&copy; {new Date().getFullYear()} ComponentHub. Built for Electronic Engineers.</p>
         </footer>
       </body>
     </html>

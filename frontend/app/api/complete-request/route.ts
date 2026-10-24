@@ -91,6 +91,13 @@ export async function POST(request: Request) {
         </a>
       </div>
 
+      <!-- Contact Note with Clickable Mailto Link -->
+      <div style="background-color: #f8fafc; border-radius: 12px; padding: 18px 20px; margin-bottom: 24px; border: 1px solid #e2e8f0; text-align: center;">
+        <p style="font-size: 14px; color: #475569; margin: 0; line-height: 1.6;">
+          If you have any questions regarding your component request, you can directly reply to <a href="mailto:ssquareelectronics2026@gmail.com?subject=Regarding%20PCB%20Component%20Request" style="color: #2563eb; text-decoration: underline; font-weight: 600;">ssquareelectronics2026@gmail.com</a>.
+        </p>
+      </div>
+
       <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0 24px 0;" />
       
       <p style="font-size: 13px; color: #94a3b8; line-height: 1.5; margin: 0; text-align: center;">
@@ -103,11 +110,12 @@ export async function POST(request: Request) {
 </html>
           `;
 
-          const emailText = `Hello! Your requested PCB component (${targetCompName}) has been successfully uploaded to PCB Component Hub. You can now download it from our platform: ${siteUrl}`;
+          const emailText = `Hello! Your requested PCB component (${targetCompName}) has been successfully uploaded to PCB Component Hub. You can now download it from our platform: ${siteUrl}\n\nIf you have any questions regarding your component request, you can directly reply to ssquareelectronics2026@gmail.com (mailto:ssquareelectronics2026@gmail.com?subject=Regarding%20PCB%20Component%20Request).\n\nBest regards,\nPCB Component Hub Team`;
 
           const { error: resendError } = await resend.emails.send({
             from: fromEmail,
             to: [targetEmail],
+            replyTo: 'ssquareelectronics2026@gmail.com',
             subject: `Your requested PCB component is ready: ${targetCompName}`,
             html: emailHtml,
             text: emailText,

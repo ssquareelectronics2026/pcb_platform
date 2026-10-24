@@ -209,6 +209,18 @@ export default function RequestComponentPage() {
           {loading ? 'Submitting Request...' : 'Send Request'}
         </button>
       </form>
+
+      <div className="mt-8 text-center text-sm text-slate-500">
+        <p>
+          If you have any questions regarding your component request, you can directly email{' '}
+          <a
+            href="mailto:ssquareelectronics2026@gmail.com?subject=Regarding%20PCB%20Component%20Request"
+            className="text-blue-600 hover:text-blue-800 font-bold underline transition-colors"
+          >
+            ssquareelectronics2026@gmail.com
+          </a>
+        </p>
+      </div>
     </div>
   );
 }
