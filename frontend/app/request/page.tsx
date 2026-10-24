@@ -28,6 +28,7 @@ function escapeHtml(text: string): string {
 
 export default function RequestComponentPage() {
   const [componentName, setComponentName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
   const [description, setDescription] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [fileInputKey, setFileInputKey] = useState(Date.now());
@@ -59,14 +60,16 @@ export default function RequestComponentPage() {
         fileUrl = publicUrlData.publicUrl;
       }
 
-      // 3. Insert into database
+      // 3. Insert into database with user_email and status
       const { error: dbError } = await supabase
         .from('component_requests')
         .insert([
           {
             component_name: componentName,
+            user_email: userEmail,
             description,
             file_url: fileUrl,
+            status: 'Pending',
           },
         ]);
 
@@ -78,16 +81,19 @@ export default function RequestComponentPage() {
 
       if (telegramBotToken && telegramChatId) {
         const safeName = escapeHtml(componentName);
+        const safeEmail = escapeHtml(userEmail);
         const safeDesc = escapeHtml(description);
 
         const textMessage = fileUrl
           ? `🚀 <b>New Component Request!</b>\n\n` +
             `📌 <b>Name:</b> ${safeName}\n` +
+            `📧 <b>Email:</b> ${safeEmail}\n` +
             `📝 <b>Details:</b> ${safeDesc}\n\n` +
             `📂 <b>Attachment:</b> <a href="${fileUrl.replace(/&/g, '&amp;')}">${escapeHtml(file?.name || 'Download / View Attachment')}</a>\n` +
             `🔗 <b>Direct Link:</b> ${fileUrl}`
           : `🚀 <b>New Component Request!</b>\n\n` +
             `📌 <b>Name:</b> ${safeName}\n` +
+            `📧 <b>Email:</b> ${safeEmail}\n` +
             `📝 <b>Details:</b> ${safeDesc}\n\n` +
             `📂 <b>Attachment:</b> None`;
 
@@ -139,8 +145,9 @@ export default function RequestComponentPage() {
         }
       }
 
-      setMessage('Request submitted successfully! We will process it soon.');
+      setMessage('Request submitted successfully! We will email you once your component is ready.');
       setComponentName('');
+      setUserEmail('');
       setDescription('');
       setFile(null);
       setFileInputKey(Date.now());
@@ -173,6 +180,19 @@ export default function RequestComponentPage() {
         <div>
           <label className="block text-sm font-bold text-slate-700 mb-3 tracking-wide uppercase">Component Name / Part Number</label>
           <input type="text" value={componentName} onChange={e => setComponentName(e.target.value)} required className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all" placeholder="e.g. ATmega328P-AU" />
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold text-slate-700 mb-3 tracking-wide uppercase">Your Email Address</label>
+          <input 
+            type="email" 
+            value={userEmail} 
+            onChange={e => setUserEmail(e.target.value)} 
+            required 
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all" 
+            placeholder="e.g. engineer@example.com" 
+          />
+          <p className="text-xs text-slate-400 mt-2 ml-1">We will notify you by email as soon as this component is created and uploaded!</p>
         </div>
 
         <div>
