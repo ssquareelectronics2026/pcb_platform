@@ -10,6 +10,12 @@ export default function ComponentDetails() {
   const [comp, setComp] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // Post-Download Tutorial Popup Modal State
+  const [downloadPopup, setDownloadPopup] = useState<{
+    isOpen: boolean;
+    type: 'symbol' | 'footprint';
+  } | null>(null);
+
   useEffect(() => {
     const fetchComponent = async () => {
       if (!id) {
@@ -30,6 +36,35 @@ export default function ComponentDetails() {
     };
     fetchComponent();
   }, [id]);
+
+  const handleDownload = async (fileUrl: string | null | undefined, type: 'symbol' | 'footprint') => {
+    if (!fileUrl) return;
+
+    // 1. Trigger File Download (strips leading timestamp prefix)
+    try {
+      const res = await fetch(fileUrl);
+      const blob = await res.blob();
+      const rawName = fileUrl.split('/').pop() || (type === 'symbol' ? `${comp?.name || 'component'}.kicad_sym` : `${comp?.name || 'component'}.kicad_mod`);
+      const cleanName = decodeURIComponent(rawName).replace(/^\d+_/, '');
+
+      const a = document.createElement('a');
+      a.href = window.URL.createObjectURL(blob);
+      a.download = cleanName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(a.href);
+    } catch (err) {
+      console.warn("Direct blob download failed, falling back to window.open", err);
+      window.open(fileUrl, '_blank');
+    }
+
+    // 2. Immediately open the Post-Download Tutorial Popup Modal
+    setDownloadPopup({
+      isOpen: true,
+      type,
+    });
+  };
 
   if (loading) {
     return (
@@ -83,7 +118,7 @@ export default function ComponentDetails() {
           </div>
         </div>
 
-        {/* RIGHT SIDE: SnapMagic Style Symbol & Footprint Side-by-Side */}
+        {/* RIGHT SIDE: Symbol & Footprint Side-by-Side */}
         <div className="w-full xl:w-2/3 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
           <div className="bg-slate-50 border-b border-slate-200 px-6 py-4">
             <span className="font-bold text-slate-900 border-b-2 border-blue-600 pb-1">Symbol and Footprint</span>
@@ -97,7 +132,6 @@ export default function ComponentDetails() {
               </div>
               {/* KiCad schematic style cream paper background with blend */}
               <div className="flex-1 flex items-center justify-center p-4 min-h-[260px] bg-[#fcfbf7] relative">
-                {/* Subtle grid pattern like KiCad schematic sheet */}
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #64748b 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
                 {comp.symbol_preview_url ? (
                   <img 
@@ -110,14 +144,14 @@ export default function ComponentDetails() {
                 )}
               </div>
               <div className="p-4 bg-white border-t border-slate-100">
-                <a 
-                  href={comp.symbol_file_url || '#'} 
-                  target={comp.symbol_file_url ? "_blank" : "_self"}
-                  download
-                  className={`block w-full text-center font-bold py-3 rounded-lg transition-colors border ${comp.symbol_file_url ? 'bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-500 hover:text-white' : 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'}`}
+                <button 
+                  type="button"
+                  onClick={() => handleDownload(comp.symbol_file_url, 'symbol')}
+                  disabled={!comp.symbol_file_url}
+                  className={`block w-full text-center font-bold py-3 rounded-lg transition-colors border ${comp.symbol_file_url ? 'bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-500 hover:text-white cursor-pointer active:scale-95' : 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'}`}
                 >
                   Download Symbol (.lib)
-                </a>
+                </button>
               </div>
             </div>
 
@@ -136,19 +170,83 @@ export default function ComponentDetails() {
                 )}
               </div>
               <div className="p-4 bg-white border-t border-slate-100">
-                <a 
-                  href={comp.footprint_file_url || '#'} 
-                  target={comp.footprint_file_url ? "_blank" : "_self"}
-                  download
-                  className={`block w-full text-center font-bold py-3 rounded-lg transition-colors border ${comp.footprint_file_url ? 'bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-500 hover:text-white' : 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'}`}
+                <button 
+                  type="button"
+                  onClick={() => handleDownload(comp.footprint_file_url, 'footprint')}
+                  disabled={!comp.footprint_file_url}
+                  className={`block w-full text-center font-bold py-3 rounded-lg transition-colors border ${comp.footprint_file_url ? 'bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-500 hover:text-white cursor-pointer active:scale-95' : 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'}`}
                 >
                   Download Footprint (.kicad_mod)
-                </a>
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Post-Download Tutorial Popup Modal */}
+      {downloadPopup && downloadPopup.isOpen && (
+        <div 
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setDownloadPopup(null)}
+        >
+          <div 
+            className="bg-white rounded-3xl p-8 sm:p-10 max-w-md w-full shadow-2xl border border-slate-100 text-center relative animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button (X) */}
+            <button
+              type="button"
+              onClick={() => setDownloadPopup(null)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition-colors p-2 rounded-full hover:bg-slate-100"
+              aria-label="Close dialog"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Icon */}
+            <div className="w-16 h-16 bg-blue-50 border border-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-5 text-2xl shadow-inner">
+              🎉
+            </div>
+
+            {/* Title */}
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
+              Thanks for downloading!
+            </h3>
+
+            {/* Text */}
+            <p className="text-slate-600 text-base font-medium mb-6 leading-relaxed">
+              {downloadPopup.type === 'symbol' 
+                ? 'How to add this symbol in KiCAD?' 
+                : 'How to add this PCB footprint in your KiCAD software?'}
+            </p>
+
+            {/* Tutorial Button (opens tutorial in new tab) */}
+            <div className="space-y-3">
+              <a
+                href={downloadPopup.type === 'symbol' ? '/tutorial/symbol' : '/tutorial/footprint'}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setDownloadPopup(null)}
+                className="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-black text-base rounded-xl shadow-lg shadow-blue-600/25 transition-all flex items-center justify-center gap-2 active:scale-95"
+              >
+                <span>Tutorial</span>
+                <span aria-hidden="true">&rarr;</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={() => setDownloadPopup(null)}
+                className="w-full py-2.5 text-slate-400 hover:text-slate-600 text-sm font-semibold transition-colors"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
