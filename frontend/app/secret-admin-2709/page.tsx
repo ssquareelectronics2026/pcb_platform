@@ -285,6 +285,39 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDateExtension = async (req: ComponentRequestRecord) => {
+    if (!req.user_email) {
+      window.alert('No client email associated with this request.');
+      return;
+    }
+    const defaultDate = new Date();
+    defaultDate.setDate(defaultDate.getDate() + 5);
+    const proposedDate = window.prompt(
+      `Propose new completion date for "${req.component_name}" (YYYY-MM-DD):`,
+      defaultDate.toISOString().split('T')[0]
+    );
+    if (!proposedDate) return;
+
+    try {
+      const res = await fetch('/api/extend-deadline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requestId: req.id,
+          clientEmail: req.user_email,
+          projectName: req.component_name,
+          proposedDate,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to dispatch date extension');
+      window.alert(`✓ Timeline update email sent to ${req.user_email} (Proposed Date: ${proposedDate})`);
+      fetchRequests();
+    } catch (err: unknown) {
+      window.alert(err instanceof Error ? err.message : 'Error sending timeline update');
+    }
+  };
+
   const handlePrefillUpload = (req: ComponentRequestRecord) => {
     setName(req.component_name);
     let desc = req.description ? `Requested by ${req.user_email || 'user'}: ${req.description}` : `Requested by ${req.user_email || 'user'}`;
@@ -615,6 +648,14 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="flex flex-wrap sm:flex-nowrap gap-2">
+                      <button
+                        onClick={() => handleDateExtension(req)}
+                        className="px-3.5 py-2.5 rounded-xl font-bold text-sm bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-700 transition-colors border border-amber-200"
+                        title="Propose date extension / reply to client"
+                      >
+                        📅 Date Extension
+                      </button>
+
                       <button
                         onClick={() => handleCompleteRequest(req)}
                         disabled={isProcessing}
