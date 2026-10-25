@@ -55,7 +55,7 @@ export async function POST(request: Request) {
       if (resendApiKey) {
         try {
           const resend = new Resend(resendApiKey);
-          const fromEmail = process.env.EMAIL_FROM || 'PCB Component Hub <onboarding@resend.dev>';
+          const fromEmail = process.env.EMAIL_FROM || 'S SQUARE ELECTRONICS <onboarding@resend.dev>';
 
           const emailHtml = `
 <!DOCTYPE html>
@@ -121,7 +121,7 @@ export async function POST(request: Request) {
           Sincerely,
         </p>
         <p style="font-size: 15px; font-weight: 700; color: #0f172a; margin: 0;">
-          The PCB Component Hub Team
+          The S SQUARE ELECTRONICS Team
         </p>
         <p style="font-size: 13px; color: #94a3b8; margin: 6px 0 0 0;">
           Empowering electronic engineers with verified footprints and symbols.
@@ -133,7 +133,7 @@ export async function POST(request: Request) {
     <!-- Footer -->
     <div style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 18px 32px; text-align: center;">
       <p style="font-size: 12px; color: #94a3b8; line-height: 1.5; margin: 0;">
-        &copy; ${new Date().getFullYear()} PCB Component Hub. All rights reserved.
+        &copy; ${new Date().getFullYear()} S SQUARE ELECTRONICS. All rights reserved.
       </p>
     </div>
 
@@ -142,7 +142,7 @@ export async function POST(request: Request) {
 </html>
           `;
 
-          const emailText = `Dear User,\n\nWe are pleased to inform you that your requested PCB component (${targetCompName}) has been successfully created, verified, and uploaded to PCB Component Hub.\n\nYou can access and download it directly from our platform:\nhttps://pcb-platform.vercel.app\n\nIf you have any questions or require revisions regarding your component request, you can directly reply to this email or reach us at ssquareelectronics2026@gmail.com (mailto:ssquareelectronics2026@gmail.com?subject=Regarding%20PCB%20Component%20Request).\n\nSincerely,\nThe PCB Component Hub Team`;
+          const emailText = `Dear User,\n\nWe are pleased to inform you that your requested PCB component (${targetCompName}) has been successfully created, verified, and uploaded to S SQUARE ELECTRONICS PCB Component Hub.\n\nYou can access and download it directly from our platform:\nhttps://pcb-platform.vercel.app\n\nIf you have any questions or require revisions regarding your component request, you can directly reply to this email or reach us at ssquareelectronics2026@gmail.com (mailto:ssquareelectronics2026@gmail.com?subject=Regarding%20PCB%20Component%20Request).\n\nSincerely,\nThe S SQUARE ELECTRONICS Team`;
 
           const { error: resendError } = await resend.emails.send({
             from: fromEmail,

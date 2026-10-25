@@ -36,7 +36,7 @@ export async function POST(request: Request) {
       try {
         const resend = new Resend(resendApiKey);
 
-        // A. Email to Designer (Santhosh)
+        // A. Email to Engineering Team
         const designerHtml = `
 <!DOCTYPE html>
 <html>
@@ -48,10 +48,10 @@ export async function POST(request: Request) {
   <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
     <div style="background: linear-gradient(135deg, #1e3a8a, #2563eb); padding: 28px; text-align: center; color: #ffffff;">
       <h2 style="margin: 0; font-size: 22px; font-weight: 800;">⚡ New PCB Design Request</h2>
-      <p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">Submitted to S SQUARE ELECTRONICS Designer Portal</p>
+      <p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">Submitted to S SQUARE ELECTRONICS</p>
     </div>
     <div style="padding: 28px;">
-      <p style="font-size: 15px; margin-top: 0;">Hello <strong>Santhosh</strong>,</p>
+      <p style="font-size: 15px; margin-top: 0;">Hello <strong>S SQUARE ELECTRONICS Team</strong>,</p>
       <p style="font-size: 14px; color: #475569; line-height: 1.5;">A new custom PCB design inquiry has been submitted by <strong>${clientName}</strong>:</p>
 
       <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px;">
@@ -126,16 +126,16 @@ export async function POST(request: Request) {
     </div>
     <div style="padding: 28px;">
       <p style="font-size: 15px; margin-top: 0;">Dear <strong>${clientName}</strong>,</p>
-      <p style="font-size: 14px; color: #475569; line-height: 1.6;">Thank you for submitting your PCB design request for <strong>${projectName}</strong>! Your requirements and circuit diagram have been assigned to our lead designer, <strong>Santhosh</strong>.</p>
+      <p style="font-size: 14px; color: #475569; line-height: 1.6;">Thank you for submitting your PCB design request for <strong>${projectName}</strong>! Your requirements and circuit diagram have been received and assigned to our engineering team.</p>
       <div style="background: #f8fafc; border-radius: 12px; padding: 16px; margin: 20px 0; border: 1px solid #e2e8f0; font-size: 14px;">
         <p style="margin: 0 0 8px; font-weight: 700; color: #0f172a;">Request Summary:</p>
         <p style="margin: 4px 0; color: #475569;">• <strong>Project:</strong> ${projectName}</p>
         <p style="margin: 4px 0; color: #475569;">• <strong>Target Timeline:</strong> ${expectedDeadline || 'Flexible'}</p>
         <p style="margin: 4px 0; color: #475569;">• <strong>Circuit Diagram:</strong> ${fileName ? 'Uploaded (' + fileName + ')' : 'None attached'}</p>
       </div>
-      <p style="font-size: 14px; color: #475569; line-height: 1.6;">Santhosh will review your circuit diagram and board constraints, and contact you directly if any clarifications or timeline alignments are needed.</p>
+      <p style="font-size: 14px; color: #475569; line-height: 1.6;">Our engineering team will review your circuit diagram and board constraints, and contact you directly if any clarifications or timeline alignments are needed.</p>
       <p style="font-size: 14px; color: #475569; line-height: 1.6;">If you have any questions or want to provide extra reference files, feel free to reply directly to <a href="mailto:ssquareelectronics2026@gmail.com" style="color: #2563eb; font-weight: 600;">ssquareelectronics2026@gmail.com</a>.</p>
-      <p style="margin-top: 24px; font-size: 14px; font-weight: 700; color: #0f172a;">Warm regards,<br>Santhosh &amp; The S SQUARE ELECTRONICS Team</p>
+      <p style="margin-top: 24px; font-size: 14px; font-weight: 700; color: #0f172a;">Warm regards,<br>The S SQUARE ELECTRONICS Team</p>
     </div>
   </div>
 </body>
@@ -154,7 +154,7 @@ export async function POST(request: Request) {
         console.warn('Resend email error in submit-pcb-request (simulation fallback active):', err);
       }
     } else {
-      console.log(`[SIMULATED EMAIL DISPATCH] To Designer (${designerEmail}) and Client (${userEmail}) for project "${projectName}".`);
+      console.log(`[SIMULATED EMAIL DISPATCH] To S SQUARE ELECTRONICS (${designerEmail}) and Client (${userEmail}) for project "${projectName}".`);
     }
 
     return NextResponse.json({
@@ -163,7 +163,7 @@ export async function POST(request: Request) {
       simulated: !resendApiKey,
       emailSentToDesigner: emailSentToDesigner || true,
       emailSentToClient: emailSentToClient || true,
-      designer: 'Santhosh (ssquareelectronics2026@gmail.com)',
+      team: 'S SQUARE ELECTRONICS (ssquareelectronics2026@gmail.com)',
     });
   } catch (err: unknown) {
     console.error('submit-pcb-request error:', err);

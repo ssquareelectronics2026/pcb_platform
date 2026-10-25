@@ -144,7 +144,7 @@ export default function RequestProjectPage() {
         console.warn('Database note:', dbError);
       }
 
-      // 4. Dispatch Email to Santhosh & Client via API route
+      // 4. Dispatch Email to S SQUARE ELECTRONICS & Client via API route
       try {
         await fetch('/api/submit-pcb-request', {
           method: 'POST',
@@ -231,7 +231,7 @@ export default function RequestProjectPage() {
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-black uppercase tracking-wider shadow-sm">
           <span>⚡ S SQUARE ELECTRONICS</span>
           <span className="text-slate-300">•</span>
-          <span>Lead Designer: Santhosh</span>
+          <span>Custom Hardware Engineering</span>
         </div>
 
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
@@ -239,7 +239,7 @@ export default function RequestProjectPage() {
         </h1>
 
         <p className="text-slate-600 text-base sm:text-lg max-w-2xl mx-auto font-medium leading-relaxed">
-          Need a complete PCB board designed for your hardware idea or circuit? Share your requirements and our lead designer <strong>Santhosh</strong> will design, route, and deliver a production-ready PCB.
+          Need a complete PCB board designed for your hardware idea or circuit? Share your requirements and our engineering team at <strong>S SQUARE ELECTRONICS</strong> will design, route, and deliver a production-ready PCB.
         </p>
 
         {/* Navigation pill pointing to component request if that's what user needs */}
@@ -317,7 +317,7 @@ export default function RequestProjectPage() {
             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
           />
           <p className="text-[11px] text-slate-400 mt-1.5">
-            Designer Santhosh will send project progress, timeline updates, and completed PCB design files directly here.
+            Our engineering team will send project progress, timeline updates, and completed PCB design files directly here.
           </p>
         </div>
 
@@ -547,7 +547,7 @@ export default function RequestProjectPage() {
               </h3>
 
               <p className="text-slate-600 text-sm leading-relaxed mb-6 font-medium">
-                Thank you, <strong>{submittedData.clientName}</strong>! Your project requirements have been forwarded directly to our lead designer, <strong>Santhosh</strong>.
+                Thank you, <strong>{submittedData.clientName}</strong>! Your project requirements have been forwarded directly to the <strong>S SQUARE ELECTRONICS</strong> engineering team.
               </p>
 
               {/* Project Recap Card */}
@@ -573,7 +573,7 @@ export default function RequestProjectPage() {
               </div>
 
               <p className="text-slate-500 text-xs mb-6">
-                Santhosh will review your circuit diagram and contact you directly if any design adjustments or timeline extensions are needed.
+                Our engineering team will review your circuit diagram and contact you directly if any design adjustments or timeline extensions are needed.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3">

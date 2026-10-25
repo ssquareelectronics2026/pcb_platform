@@ -24,7 +24,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const designerName = 'Santhosh';
     const designerEmail = 'ssquareelectronics2026@gmail.com';
 
     // 1. Update Supabase record if requestId is provided
@@ -67,7 +66,7 @@ export async function POST(request: Request) {
       <p style="font-size: 15px; margin-top: 0;">Dear <strong>${clientName}</strong>,</p>
       
       <p style="font-size: 14px; color: #475569; line-height: 1.6;">
-        Our lead PCB designer, <strong>${designerName}</strong>, is actively reviewing and laying out your hardware design for <strong>${projectName}</strong>.
+        The engineering team at <strong>S SQUARE ELECTRONICS</strong> is actively reviewing and laying out your hardware design for <strong>${projectName}</strong>.
       </p>
 
       <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 18px; margin: 20px 0;">
@@ -77,17 +76,17 @@ export async function POST(request: Request) {
       </div>
 
       <p style="font-size: 14px; color: #475569; line-height: 1.6;">
-        ${customMessage || `To ensure your board achieves maximum signal integrity, optimal component spacing, thermal reliability, and strict Design-for-Manufacturing (DFM) verification, Santhosh recommends the adjusted timeline above.`}
+        ${customMessage || `To ensure your board achieves maximum signal integrity, optimal component spacing, thermal reliability, and strict Design-for-Manufacturing (DFM) verification, our engineering team recommends the adjusted timeline above.`}
       </p>
 
       <p style="font-size: 14px; color: #475569; line-height: 1.6;">
-        Please reply directly to this email or reach out to Santhosh at <a href="mailto:${designerEmail}?subject=Re:%20Timeline%20Adjustment%20for%20${encodeURIComponent(projectName)}" style="color: #2563eb; font-weight: 600;">${designerEmail}</a> to confirm whether this proposed timeline suits your schedule.
+        Please reply directly to this email or reach out to us at <a href="mailto:${designerEmail}?subject=Re:%20Timeline%20Adjustment%20for%20${encodeURIComponent(projectName)}" style="color: #2563eb; font-weight: 600;">${designerEmail}</a> to confirm whether this proposed timeline suits your schedule.
       </p>
 
       <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 14px; color: #0f172a;">
         <p style="margin: 0; font-weight: 700;">Best regards,</p>
-        <p style="margin: 4px 0 0; color: #2563eb; font-weight: 800;">Santhosh</p>
-        <p style="margin: 2px 0 0; font-size: 12px; color: #64748b;">Lead Hardware &amp; PCB Designer | S SQUARE ELECTRONICS</p>
+        <p style="margin: 4px 0 0; color: #2563eb; font-weight: 800;">S SQUARE ELECTRONICS Team</p>
+        <p style="margin: 2px 0 0; font-size: 12px; color: #64748b;">Hardware &amp; PCB Design Department | S SQUARE ELECTRONICS</p>
         <p style="margin: 2px 0 0; font-size: 12px; color: #64748b;">Email: <a href="mailto:${designerEmail}" style="color: #64748b;">${designerEmail}</a></p>
       </div>
     </div>
@@ -121,7 +120,7 @@ export async function POST(request: Request) {
       simulated: !resendApiKey,
       clientEmail,
       proposedDate,
-      message: `Timeline update email successfully dispatched to ${clientEmail} from designer Santhosh.`,
+      message: `Timeline update email successfully dispatched to ${clientEmail} from S SQUARE ELECTRONICS.`,
     });
   } catch (err: unknown) {
     console.error('extend-deadline error:', err);
