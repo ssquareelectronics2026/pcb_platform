@@ -2,10 +2,102 @@ import Link from 'next/link';
 
 export const metadata = {
   title: 'KiCAD Footprint Tutorial | PCB Component Hub',
-  description: 'Documentation tutorial for adding footprints in KiCAD software.',
+  description: 'Documentation tutorial for adding the symbol and footprint in KiCAD software.',
 };
 
 export default function FootprintTutorialPage() {
+  const steps = [
+    {
+      stepNumber: 1,
+      title: 'Step 1',
+      text: 'After downloading the <component_name>.kicad_mod.',
+      image: null,
+    },
+    {
+      stepNumber: 2,
+      title: 'Step 2',
+      text: 'Create a folder <component_name>.pretty. The name of the folder should be same as the component footprint name you downloaded.',
+      image: '/tutorial/IMG 8.png',
+      alt: 'Create a folder <component_name>.pretty',
+    },
+    {
+      stepNumber: 3,
+      title: 'Step 3',
+      text: 'Move the <component_name>.kicad_mod file into the folder <component_name>.pretty.',
+      image: '/tutorial/IMG 9.png',
+      alt: 'Move the <component_name>.kicad_mod file into the folder <component_name>.pretty',
+    },
+    {
+      stepNumber: 4,
+      title: 'Step 4',
+      text: 'Open KiCAD and click on the Footprints Editor.',
+      image: '/tutorial/IMG 10.png',
+      alt: 'Open KiCAD and click on the Footprints Editor',
+    },
+    {
+      stepNumber: 5,
+      title: 'Step 5',
+      text: 'Now click on the File tab present on the top left corner and then click Add library… option.',
+      image: '/tutorial/IMG 11.png',
+      alt: 'Click on File tab and then Add library option',
+    },
+    {
+      stepNumber: 6,
+      title: 'Step 6',
+      text: 'A pop-up will open of your file explorer. Navigate to the folder path where you have saved <component_name>.pretty folder. Click on the folder and click Select Folder.',
+      image: '/tutorial/IMG 12.png',
+      alt: 'Select <component_name>.pretty folder in file explorer',
+    },
+    {
+      stepNumber: 7,
+      title: 'Step 7',
+      text: 'Now in the droplist of Footprints → Items you can see the library <component_name> has been added. Right click on it and click Import Footprint option.',
+      image: '/tutorial/IMG 13.png',
+      alt: 'Right click on library and click Import Footprint option',
+    },
+    {
+      stepNumber: 8,
+      title: 'Step 8',
+      text: 'A new pop-up will open about the import of footprint. Now navigate to the <component_name>.pretty folder and open the folder and click the <component_name>.kicad_mod and click Open.',
+      image: '/tutorial/IMG 14.png',
+      alt: 'Navigate to <component_name>.pretty folder and open <component_name>.kicad_mod',
+    },
+    {
+      stepNumber: 9,
+      title: 'Step 9',
+      text: 'You can see the footprint available on the viewer side. Now just click Ctrl + S, a new pop-up Save Footprint As will open. In that pop-up search or navigate to the <component_name> folder select it and click OK and then click Overwrite.',
+      image: '/tutorial/IMG 15.png',
+      alt: 'Save Footprint As pop-up and overwrite in folder',
+    },
+    {
+      stepNumber: 10,
+      title: 'Step 10',
+      text: 'Now you can see the footprint name under the footprints folder. Now safely close the Footprints Editor and then open the Symbols Editor. Navigate to the equivalent symbol to which you need to add the desired footprint. Right click on the symbol name and click Symbol Properties.',
+      image: '/tutorial/IMG 16.png',
+      alt: 'Symbols Editor, navigate to equivalent symbol, right click and select Symbol Properties',
+    },
+    {
+      stepNumber: 11,
+      title: 'Step 11',
+      text: 'A new pop-up Library Symbol Properties will open and click on the Browse option (in the same tab of Footprint) to add the desired and equivalent footprint for the symbol.',
+      image: '/tutorial/IMG 17.png',
+      alt: 'Click Browse option in Footprint row of Library Symbol Properties',
+    },
+    {
+      stepNumber: 12,
+      title: 'Step 12',
+      text: 'A new pop-up Footprint Chooser will open, here browse for the desired and equivalent footprint name you need to add for your symbol. Click on the and check the preview and click OK.',
+      image: '/tutorial/IMG 18.png',
+      alt: 'Footprint Chooser pop-up, browse for footprint and click OK',
+    },
+    {
+      stepNumber: 13,
+      title: 'Step 13',
+      text: 'Once again Ctrl + S (before leaving the software) and safely exit the software.',
+      image: null,
+    },
+  ];
+
   return (
     <div className="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-500">
       {/* Navigation breadcrumb */}
@@ -37,32 +129,64 @@ export default function FootprintTutorialPage() {
         </h2>
       </div>
 
-      {/* Placeholder Content Area */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-10 sm:p-16 text-center shadow-sm">
-        <div className="w-16 h-16 bg-blue-50 border border-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-5 text-2xl shadow-inner">
-          📐
-        </div>
-        <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">
-          Footprint Tutorial Steps Coming Soon
-        </h3>
-        <p className="text-slate-500 max-w-lg mx-auto text-base leading-relaxed mb-8">
-          The step-by-step documentation with screenshots for importing and associating footprints in KiCAD is currently being prepared.
-        </p>
+      {/* Tutorial Steps */}
+      <div className="space-y-8">
+        {steps.map((item) => (
+          <div 
+            key={item.stepNumber}
+            className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-start gap-4">
+              <span className="flex-shrink-0 w-10 h-10 rounded-2xl bg-blue-600 text-white font-black text-base flex items-center justify-center shadow-md shadow-blue-600/20">
+                {item.stepNumber}
+              </span>
+              <div className="flex-1 pt-1.5">
+                <p className="text-base sm:text-lg text-slate-800 font-semibold leading-relaxed">
+                  <span className="font-bold text-slate-900">{item.title}: </span>
+                  {item.text}
+                </p>
 
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          <Link
-            href="/tutorial/symbol"
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 transition-all text-sm active:scale-95"
-          >
-            &larr; View Symbol Tutorial
-          </Link>
-          <Link
-            href="/"
-            className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all text-sm active:scale-95 border border-slate-200"
-          >
-            Browse Library
-          </Link>
+                {/* Display step image if present */}
+                {item.image && (
+                  <div className="mt-5 rounded-2xl border border-slate-200 overflow-hidden bg-slate-50 shadow-inner">
+                    <img
+                      src={item.image}
+                      alt={item.alt || item.title}
+                      className="w-full h-auto object-contain max-h-[540px] mx-auto block hover:scale-[1.01] transition-transform duration-300"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Closing Message Banner */}
+      <div className="my-10 bg-gradient-to-r from-blue-600 to-emerald-600 text-white rounded-3xl p-8 sm:p-10 text-center shadow-xl shadow-blue-900/10 relative overflow-hidden">
+        <div className="relative z-10">
+          <span className="text-3xl block mb-2">🎉</span>
+          <h3 className="text-xl sm:text-2xl font-black tracking-tight">
+            Enjoy your PCB works and have a great success ahead!!!
+          </h3>
         </div>
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="mt-12 text-center pt-8 border-t border-slate-200 flex flex-wrap items-center justify-center gap-4">
+        <Link 
+          href="/tutorial/symbol" 
+          className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-700 hover:text-blue-600 font-bold rounded-xl shadow-sm hover:shadow transition-all text-sm active:scale-95"
+        >
+          &larr; View Symbol Tutorial
+        </Link>
+        <Link 
+          href="/" 
+          className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 transition-all text-sm active:scale-95"
+        >
+          Back to Component Library &rarr;
+        </Link>
       </div>
     </div>
   );
