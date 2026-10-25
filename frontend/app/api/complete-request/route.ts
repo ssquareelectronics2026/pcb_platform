@@ -4,6 +4,72 @@ import { Resend } from 'resend';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Extracts storage bucket and file path from a Supabase Storage public URL
+ */
+function extractStoragePathAndBucket(url: string | null | undefined): { bucket: string; path: string } | null {
+  if (!url || typeof url !== 'string') return null;
+
+  // 1. Matches /request_files/<filePath>
+  if (url.includes('/request_files/')) {
+    const parts = url.split('/request_files/');
+    if (parts.length > 1 && parts[1]) {
+      const cleanPath = decodeURIComponent(parts[1].split('?')[0]).replace(/^\/+/, '');
+      return { bucket: 'request_files', path: cleanPath };
+    }
+  }
+
+  // 2. Matches /pcb_components/<filePath>
+  if (url.includes('/pcb_components/')) {
+    const parts = url.split('/pcb_components/');
+    if (parts.length > 1 && parts[1]) {
+      const cleanPath = decodeURIComponent(parts[1].split('?')[0]).replace(/^\/+/, '');
+      return { bucket: 'pcb_components', path: cleanPath };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Extracts all unique Supabase storage paths from an array of strings/URLs
+ */
+function extractAllStorageFiles(sources: (string | null | undefined)[]): {
+  request_files: string[];
+  pcb_components: string[];
+} {
+  const requestFilesSet = new Set<string>();
+  const pcbComponentsSet = new Set<string>();
+
+  for (const src of sources) {
+    if (!src || typeof src !== 'string') continue;
+
+    // Direct URL check
+    const directMatch = extractStoragePathAndBucket(src);
+    if (directMatch) {
+      if (directMatch.bucket === 'request_files') requestFilesSet.add(directMatch.path);
+      if (directMatch.bucket === 'pcb_components') pcbComponentsSet.add(directMatch.path);
+    }
+
+    // Embedded URLs check (e.g. in multi-file descriptions)
+    const urlMatches = src.match(/https?:\/\/[^\s\)\"\'>]+/g);
+    if (urlMatches) {
+      for (const matchedUrl of urlMatches) {
+        const item = extractStoragePathAndBucket(matchedUrl);
+        if (item) {
+          if (item.bucket === 'request_files') requestFilesSet.add(item.path);
+          if (item.bucket === 'pcb_components') pcbComponentsSet.add(item.path);
+        }
+      }
+    }
+  }
+
+  return {
+    request_files: Array.from(requestFilesSet),
+    pcb_components: Array.from(pcbComponentsSet),
+  };
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -29,9 +95,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required field: requestId.' }, { status: 400 });
     }
 
-    // 2. Initialize Supabase Client
+    // 2. Initialize Supabase Client (uses Service Role Key when available to bypass RLS for cleanup)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
+    const supabaseKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // 3. Fetch Existing Request from Supabase
@@ -41,7 +108,7 @@ export async function POST(request: Request) {
       .eq('id', requestId)
       .maybeSingle();
 
-    // 4. Update Request Status in Supabase
+    // 4. Update Request Status in Supabase (keeps database history intact)
     const updatePayload: Record<string, unknown> = {
       status: 'Completed',
       completed_at: new Date().toISOString(),
@@ -121,6 +188,20 @@ export async function POST(request: Request) {
             const resend = new Resend(resendApiKey);
             const fromEmail = process.env.EMAIL_FROM || 'S SQUARE ELECTRONICS <onboarding@resend.dev>';
 
+            // Fetch Gerber file to attach directly to email before storage deletion
+            let gerberAttachmentBuffer: Buffer | null = null;
+            if (finalGerberUrl && finalGerberUrl.startsWith('http')) {
+              try {
+                const fileRes = await fetch(finalGerberUrl);
+                if (fileRes.ok) {
+                  const arrayBuffer = await fileRes.arrayBuffer();
+                  gerberAttachmentBuffer = Buffer.from(arrayBuffer);
+                }
+              } catch (fetchErr) {
+                console.warn('Could not pre-fetch Gerber file for direct email attachment:', fetchErr);
+              }
+            }
+
             const emailHtml = `
 <!DOCTYPE html>
 <html>
@@ -161,7 +242,7 @@ export async function POST(request: Request) {
           ${cleanProjectName}
         </p>
         <p style="margin: 6px 0 0 0; font-size: 14px; color: #475569; line-height: 1.6;">
-          Your manufacturing package has been compiled and verified into a production-ready ZIP archive. It contains all copper layers (Top &amp; Bottom), solder mask, silkscreen, board outline, and Excellon NC drill files.
+          Your manufacturing package has been verified and attached directly to this email as a production-ready ZIP archive (<strong>${cleanProjectName}_Gerber.zip</strong>). It contains all copper layers (Top &amp; Bottom), solder mask, silkscreen, board outline, and Excellon NC drill files.
         </p>
       </div>
 
@@ -173,7 +254,7 @@ export async function POST(request: Request) {
       </div>
 
       <p style="font-size: 13px; line-height: 1.6; color: #64748b; text-align: center; margin-bottom: 28px;">
-        Direct download link: <a href="${finalGerberUrl}" style="color: #2563eb; text-decoration: underline; word-break: break-all;">${finalGerberUrl}</a>
+        Direct archive link: <a href="${finalGerberUrl}" style="color: #2563eb; text-decoration: underline; word-break: break-all;">${finalGerberUrl}</a>
       </p>
 
       <!-- Instant Manufacturing Ordering Guide -->
@@ -182,7 +263,7 @@ export async function POST(request: Request) {
           🚀 Ready for Instant PCB Manufacturing:
         </p>
         <p style="margin: 0; font-size: 13px; color: #15803d; line-height: 1.6;">
-          You can directly upload this ZIP archive without unzipping to any PCB fabrication portal to place your fabrication order:
+          You can directly upload the attached ZIP archive without unzipping to any PCB fabrication portal to place your fabrication order:
         </p>
         <ul style="margin: 10px 0 0 0; padding-left: 20px; font-size: 13px; color: #166534; line-height: 1.7;">
           <li><strong>JLC PCB</strong> (<a href="https://jlcpcb.com" target="_blank" style="color: #15803d; font-weight: 600;">jlcpcb.com</a>) — Standard 2-Layer &amp; Multi-Layer quick turn</li>
@@ -233,16 +314,35 @@ export async function POST(request: Request) {
 </html>
             `;
 
-            const emailText = `Dear ${clientName},\n\nWe are pleased to inform you that our engineering team at S SQUARE ELECTRONICS has completed the circuit design, routing, and design-rule verification (DRC) for your custom project: ${cleanProjectName}.\n\nYour production-ready Gerber Files (ZIP) are ready for immediate download:\n${finalGerberUrl}\n\nManufacturing Guide:\nYou can upload this ZIP archive directly without unzipping to any PCB manufacturing portal such as JLC PCB (https://jlcpcb.com), Lion Circuits (https://lioncircuits.com), or PCBWay (https://pcbway.com).\n\nSpecifications:\n${notes}\n\nIf you have any questions or require revisions, reply to this email or reach us at ssquareelectronics2026@gmail.com.\n\nSincerely,\nThe S SQUARE ELECTRONICS Team`;
+            const emailText = `Dear ${clientName},\n\nWe are pleased to inform you that our engineering team at S SQUARE ELECTRONICS has completed the circuit design, routing, and design-rule verification (DRC) for your custom project: ${cleanProjectName}.\n\nYour production-ready Gerber Files (${cleanProjectName}_Gerber.zip) are attached directly to this email.\nArchive Link: ${finalGerberUrl}\n\nManufacturing Guide:\nYou can upload this ZIP archive directly without unzipping to any PCB manufacturing portal such as JLC PCB (https://jlcpcb.com), Lion Circuits (https://lioncircuits.com), or PCBWay (https://pcbway.com).\n\nSpecifications:\n${notes}\n\nIf you have any questions or require revisions, reply to this email or reach us at ssquareelectronics2026@gmail.com.\n\nSincerely,\nThe S SQUARE ELECTRONICS Team`;
 
-            const { error: resendError } = await resend.emails.send({
+            const resendPayload: {
+              from: string;
+              to: string[];
+              replyTo: string;
+              subject: string;
+              html: string;
+              text: string;
+              attachments?: { filename: string; content: Buffer }[];
+            } = {
               from: fromEmail,
               to: [targetEmail],
               replyTo: 'ssquareelectronics2026@gmail.com',
               subject: `Your PCB Design & Gerber Files are Ready! - ${cleanProjectName} | S SQUARE ELECTRONICS`,
               html: emailHtml,
               text: emailText,
-            });
+            };
+
+            if (gerberAttachmentBuffer) {
+              resendPayload.attachments = [
+                {
+                  filename: `${cleanProjectName}_Gerber.zip`,
+                  content: gerberAttachmentBuffer,
+                },
+              ];
+            }
+
+            const { error: resendError } = await resend.emails.send(resendPayload);
 
             if (resendError) {
               console.error('Resend error:', resendError);
@@ -420,13 +520,74 @@ export async function POST(request: Request) {
       }
     }
 
+    // 8. AUTOMATIC STORAGE CLEANUP WORKFLOW:
+    // Extract and delete all physical files from Supabase Storage to keep free-tier quota pristine.
+    // Preserves database record in `component_requests` for history tracking.
+    const storageTargets = extractAllStorageFiles([
+      existingRequest?.file_url,
+      existingRequest?.component_link,
+      existingRequest?.description,
+      gerberUrl,
+      updatedRequest?.file_url,
+      updatedRequest?.component_link,
+    ]);
+
+    let filesDeletedCount = 0;
+    const deletedSummary: string[] = [];
+
+    // A. Wipe all intake files from `request_files` (circuit diagrams, datasheets, PDFs, images)
+    if (storageTargets.request_files.length > 0) {
+      try {
+        const { error: reqStorageError } = await supabase.storage
+          .from('request_files')
+          .remove(storageTargets.request_files);
+
+        if (reqStorageError) {
+          console.warn('[STORAGE CLEANUP] Warning removing from request_files:', reqStorageError.message);
+        } else {
+          filesDeletedCount += storageTargets.request_files.length;
+          deletedSummary.push(`request_files: ${storageTargets.request_files.length} file(s)`);
+          console.log(`[STORAGE CLEANUP] Removed from request_files:`, storageTargets.request_files);
+        }
+      } catch (err) {
+        console.warn('[STORAGE CLEANUP] Error in request_files cleanup:', err);
+      }
+    }
+
+    // B. Wipe Gerber archives from `pcb_components` (strictly leaves catalog components intact)
+    const gerberFilesToDelete = storageTargets.pcb_components.filter(
+      (path) => path.startsWith('gerbers/') || path.toLowerCase().includes('gerber') || path.toLowerCase().endsWith('.zip')
+    );
+
+    if (gerberFilesToDelete.length > 0) {
+      try {
+        const { error: pcbStorageError } = await supabase.storage
+          .from('pcb_components')
+          .remove(gerberFilesToDelete);
+
+        if (pcbStorageError) {
+          console.warn('[STORAGE CLEANUP] Warning removing from pcb_components:', pcbStorageError.message);
+        } else {
+          filesDeletedCount += gerberFilesToDelete.length;
+          deletedSummary.push(`pcb_components: ${gerberFilesToDelete.length} file(s)`);
+          console.log(`[STORAGE CLEANUP] Removed from pcb_components:`, gerberFilesToDelete);
+        }
+      } catch (err) {
+        console.warn('[STORAGE CLEANUP] Error in pcb_components cleanup:', err);
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'Request marked as Completed.',
+      message: 'Request marked as Completed and storage cleaned up.',
       emailSent,
       warning,
       requestType: isProject ? 'project' : 'component',
       directUrl,
+      storageCleanup: {
+        filesDeleted: filesDeletedCount,
+        summary: deletedSummary,
+      },
       request: updatedRequest,
     });
   } catch (err: unknown) {

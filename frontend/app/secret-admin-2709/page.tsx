@@ -375,10 +375,13 @@ export default function AdminDashboard() {
 
       await fetchRequests();
 
+      const cleanedCount = data.storageCleanup?.filesDeleted || 0;
+      const cleanupNotice = cleanedCount > 0 ? ` (${cleanedCount} physical storage file(s) wiped to optimize free tier)` : '';
+
       setCompletionSuccess(
         completionType === 'project'
-          ? `✓ Project completed! Gerber download notification sent to ${completingReq.user_email || 'client'} 🚀`
-          : `✓ Component completed! Direct link notification sent to ${completingReq.user_email || 'user'} 📧`
+          ? `✓ Project completed! Delivered to ${completingReq.user_email || 'client'} & storage freed up${cleanupNotice} 🚀`
+          : `✓ Component completed! Direct link dispatched & storage cleaned${cleanupNotice} 📧`
       );
 
       setTimeout(() => {
@@ -1005,6 +1008,12 @@ export default function AdminDashboard() {
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wider ${isCompleted ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}`}>
                           {isCompleted ? '✓ Completed' : '⏳ Pending'}
                         </span>
+
+                        {isCompleted && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            Storage Optimized ⚡
+                          </span>
+                        )}
                       </div>
                       
                       {req.user_email && (
