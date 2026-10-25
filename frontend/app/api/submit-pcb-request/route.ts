@@ -3,6 +3,12 @@ import { Resend } from 'resend';
 
 export const dynamic = 'force-dynamic';
 
+interface FileItem {
+  name: string;
+  url: string;
+  size?: number;
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -12,6 +18,7 @@ export async function POST(request: Request) {
       userEmail,
       fileUrl,
       fileName,
+      files,
       componentList,
       boardConstraints,
       specialInstructions,
@@ -25,6 +32,13 @@ export async function POST(request: Request) {
       );
     }
 
+    const attachedFiles: FileItem[] =
+      Array.isArray(files) && files.length > 0
+        ? files
+        : fileUrl
+        ? [{ name: fileName || 'Circuit Diagram / Datasheet', url: fileUrl }]
+        : [];
+
     const designerEmail = 'ssquareelectronics2026@gmail.com';
     const resendApiKey = process.env.RESEND_API_KEY;
     const fromEmail = process.env.EMAIL_FROM || 'S SQUARE ELECTRONICS <onboarding@resend.dev>';
@@ -36,7 +50,7 @@ export async function POST(request: Request) {
       try {
         const resend = new Resend(resendApiKey);
 
-        // A. Email to Engineering Team
+        // A. Email to S SQUARE ELECTRONICS Engineering Team
         const designerHtml = `
 <!DOCTYPE html>
 <html>
@@ -85,12 +99,39 @@ export async function POST(request: Request) {
         </tr>
       </table>
 
-      ${fileUrl ? `
-      <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 16px; margin: 20px 0; text-align: center;">
-        <p style="margin: 0 0 10px; font-weight: 700; color: #1e40af; font-size: 14px;">📎 Circuit Diagram Attachment</p>
-        <a href="${fileUrl}" target="_blank" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 13px;">View / Download Circuit Diagram</a>
+      ${
+        attachedFiles.length > 0
+          ? `
+      <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 14px; padding: 20px; margin: 22px 0;">
+        <p style="margin: 0 0 12px; font-weight: 800; color: #1e40af; font-size: 15px;">
+          📎 Uploaded Circuit Diagrams &amp; Component Datasheets (${attachedFiles.length})
+        </p>
+        <div style="margin-top: 10px;">
+          ${attachedFiles
+            .map(
+              (f) => `
+            <div style="background: #ffffff; border: 1px solid #dbeafe; border-radius: 10px; padding: 12px 16px; margin-bottom: 8px;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="font-size: 14px; font-weight: 700; color: #0f172a; padding: 0;">
+                    ${f.name.toLowerCase().endsWith('.pdf') ? '📄' : '🖼️'} ${f.name}
+                  </td>
+                  <td style="text-align: right; padding: 0;">
+                    <a href="${f.url}" target="_blank" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 12px;">
+                      View / Download &darr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          `
+            )
+            .join('')}
+        </div>
       </div>
-      ` : '<p style="color: #94a3b8; font-size: 13px; margin: 15px 0;"><em>No circuit diagram file attached.</em></p>'}
+      `
+          : '<p style="color: #94a3b8; font-size: 13px; margin: 15px 0;"><em>No circuit diagram or datasheet files attached.</em></p>'
+      }
 
       <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 13px; color: #64748b;">
         <p style="margin: 0;">You can directly reply to this email to contact the client at <a href="mailto:${userEmail}" style="color: #2563eb;">${userEmail}</a>.</p>
@@ -126,14 +167,16 @@ export async function POST(request: Request) {
     </div>
     <div style="padding: 28px;">
       <p style="font-size: 15px; margin-top: 0;">Dear <strong>${clientName}</strong>,</p>
-      <p style="font-size: 14px; color: #475569; line-height: 1.6;">Thank you for submitting your PCB design request for <strong>${projectName}</strong>! Your requirements and circuit diagram have been received and assigned to our engineering team.</p>
+      <p style="font-size: 14px; color: #475569; line-height: 1.6;">Thank you for submitting your PCB design request for <strong>${projectName}</strong>! Your requirements, circuit diagrams, and component datasheets have been received and assigned to our engineering team.</p>
       <div style="background: #f8fafc; border-radius: 12px; padding: 16px; margin: 20px 0; border: 1px solid #e2e8f0; font-size: 14px;">
         <p style="margin: 0 0 8px; font-weight: 700; color: #0f172a;">Request Summary:</p>
         <p style="margin: 4px 0; color: #475569;">• <strong>Project:</strong> ${projectName}</p>
         <p style="margin: 4px 0; color: #475569;">• <strong>Target Timeline:</strong> ${expectedDeadline || 'Flexible'}</p>
-        <p style="margin: 4px 0; color: #475569;">• <strong>Circuit Diagram:</strong> ${fileName ? 'Uploaded (' + fileName + ')' : 'None attached'}</p>
+        <p style="margin: 4px 0; color: #475569;">• <strong>Circuit Diagrams &amp; Datasheets:</strong> ${
+          attachedFiles.length > 0 ? attachedFiles.map((f) => f.name).join(', ') : 'None attached'
+        }</p>
       </div>
-      <p style="font-size: 14px; color: #475569; line-height: 1.6;">Our engineering team will review your circuit diagram and board constraints, and contact you directly if any clarifications or timeline alignments are needed.</p>
+      <p style="font-size: 14px; color: #475569; line-height: 1.6;">Our engineering team will review your circuit diagram, component datasheets, and board constraints, and contact you directly if any clarifications or timeline alignments are needed.</p>
       <p style="font-size: 14px; color: #475569; line-height: 1.6;">If you have any questions or want to provide extra reference files, feel free to reply directly to <a href="mailto:ssquareelectronics2026@gmail.com" style="color: #2563eb; font-weight: 600;">ssquareelectronics2026@gmail.com</a>.</p>
       <p style="margin-top: 24px; font-size: 14px; font-weight: 700; color: #0f172a;">Warm regards,<br>The S SQUARE ELECTRONICS Team</p>
     </div>
@@ -154,7 +197,9 @@ export async function POST(request: Request) {
         console.warn('Resend email error in submit-pcb-request (simulation fallback active):', err);
       }
     } else {
-      console.log(`[SIMULATED EMAIL DISPATCH] To S SQUARE ELECTRONICS (${designerEmail}) and Client (${userEmail}) for project "${projectName}".`);
+      console.log(
+        `[SIMULATED EMAIL DISPATCH] To S SQUARE ELECTRONICS (${designerEmail}) and Client (${userEmail}) for project "${projectName}" with ${attachedFiles.length} attached file(s).`
+      );
     }
 
     return NextResponse.json({
@@ -163,6 +208,7 @@ export async function POST(request: Request) {
       simulated: !resendApiKey,
       emailSentToDesigner: emailSentToDesigner || true,
       emailSentToClient: emailSentToClient || true,
+      filesAttached: attachedFiles.length,
       team: 'S SQUARE ELECTRONICS (ssquareelectronics2026@gmail.com)',
     });
   } catch (err: unknown) {
