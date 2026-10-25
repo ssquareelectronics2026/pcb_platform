@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import ImageCropModal from '@/components/ImageCropModal';
 
@@ -60,7 +61,17 @@ export default function AdminDashboard() {
   // Requests State
   const [requests, setRequests] = useState<ComponentRequestRecord[]>([]);
   const [requestFilter, setRequestFilter] = useState<'all' | 'pending' | 'completed'>('all');
-  const [completingId, setCompletingId] = useState<string | number | null>(null);
+
+  // Completion & Gerber Delivery Modal State
+  const [completingReq, setCompletingReq] = useState<ComponentRequestRecord | null>(null);
+  const [completionType, setCompletionType] = useState<'project' | 'component'>('component');
+  const [selectedComponentId, setSelectedComponentId] = useState<string | number | ''>('');
+  const [gerberFile, setGerberFile] = useState<File | null>(null);
+  const [gerberUrlInput, setGerberUrlInput] = useState('');
+  const [manufacturingNotes, setManufacturingNotes] = useState('');
+  const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
+  const [completionError, setCompletionError] = useState('');
+  const [completionSuccess, setCompletionSuccess] = useState('');
 
   useEffect(() => {
     fetchComponents();
@@ -79,6 +90,45 @@ export default function AdminDashboard() {
     if (data) {
       setRequests(data as ComponentRequestRecord[]);
     }
+  };
+
+  const isPcbProjectRequest = (req: ComponentRequestRecord) => {
+    return (
+      req.component_name.toLowerCase().includes('[pcb project]') ||
+      req.component_name.toLowerCase().includes('project') ||
+      Boolean(req.description && req.description.includes('Client / Company:'))
+    );
+  };
+
+  const getGerberUrl = (req: ComponentRequestRecord): string | null => {
+    if (req.component_link && (req.component_link.toLowerCase().endsWith('.zip') || req.component_link.toLowerCase().includes('gerber'))) {
+      return req.component_link;
+    }
+    if (req.description) {
+      const match =
+        req.description.match(/\[Gerber Files\]:\s*([^\s\n\r]+)/i) ||
+        req.description.match(/\[Gerber Download\]:\s*([^\s\n\r]+)/i);
+      if (match) return match[1];
+    }
+    if (req.file_url && req.file_url.toLowerCase().endsWith('.zip') && req.file_url.toLowerCase().includes('gerber')) {
+      return req.file_url;
+    }
+    return null;
+  };
+
+  const getMatchedComponent = (req: ComponentRequestRecord): ComponentRecord | null => {
+    const cleanName = req.component_name
+      .toLowerCase()
+      .replace(/^\[component\]\s*/i, '')
+      .replace(/^\[pcb project\]\s*/i, '')
+      .trim();
+    if (!cleanName) return null;
+    return (
+      components.find((c) => {
+        const cName = c.name.toLowerCase().trim();
+        return cName === cleanName || cleanName.includes(cName) || cName.includes(cleanName);
+      }) || null
+    );
   };
 
   const handleFileSelectForCrop = (e: React.ChangeEvent<HTMLInputElement>, target: CropTarget) => {
@@ -233,55 +283,111 @@ export default function AdminDashboard() {
     setLoading(false);
   };
 
-  // Request Management Handlers
-  const handleCompleteRequest = async (req: ComponentRequestRecord) => {
-    let secret = adminSecret || process.env.NEXT_PUBLIC_ADMIN_SECRET || '';
+  // Open Completion Modal for Gerber Files or Direct Component Link
+  const openCompletionModal = (req: ComponentRequestRecord) => {
+    const isProject = isPcbProjectRequest(req);
+    const existingGerber = getGerberUrl(req);
+    const matched = getMatchedComponent(req);
+
+    setCompletingReq(req);
+    setCompletionType(isProject ? 'project' : 'component');
+    setGerberFile(null);
+    setGerberUrlInput(existingGerber || '');
+    setManufacturingNotes(
+      '2-Layer FR4 1.6mm thickness, 1oz Copper, Green solder mask, White silkscreen, Lead-Free HASL finish. 100% Design Rule Check (DRC) passed. Ready for immediate production on JLC PCB / Lion Circuits / PCBWay.'
+    );
+    setSelectedComponentId(matched ? matched.id : '');
+    setCompletionError('');
+    setCompletionSuccess('');
+  };
+
+  // Execute Completion Submission & File Upload
+  const handleExecuteCompletion = async () => {
+    if (!completingReq) return;
+    setIsSubmittingCompletion(true);
+    setCompletionError('');
+    setCompletionSuccess('');
+
+    const secret = adminSecret || process.env.NEXT_PUBLIC_ADMIN_SECRET || '';
     if (!secret) {
-      const enteredSecret = window.prompt('Enter Admin Secret Key to confirm completion & dispatch email:');
-      if (!enteredSecret) return;
-      secret = enteredSecret;
-      setAdminSecret(enteredSecret);
+      setCompletionError('Admin Secret Key is required to confirm completion and send emails.');
+      setIsSubmittingCompletion(false);
+      return;
     }
 
-    const confirmMsg = req.user_email
-      ? `Mark "${req.component_name}" as Completed and dispatch notification email to ${req.user_email}?`
-      : `Mark "${req.component_name}" as Completed?`;
-
-    if (!window.confirm(confirmMsg)) return;
-
-    setCompletingId(req.id);
     try {
+      let finalGerberUrl = gerberUrlInput.trim();
+
+      // 1. If designer uploaded a Gerber ZIP archive, upload it to Supabase Storage
+      if (completionType === 'project' && gerberFile) {
+        const sanitizedName = gerberFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const fileName = `gerbers/${Date.now()}_${sanitizedName}`;
+
+        let uploadError: Error | null = null;
+        let bucketUsed = 'pcb_components';
+
+        // Try pcb_components first
+        const { error: err1 } = await supabase.storage.from('pcb_components').upload(fileName, gerberFile, {
+          contentType: 'application/zip',
+          upsert: true,
+        });
+
+        if (err1) {
+          // Fallback to request_files bucket
+          const { error: err2 } = await supabase.storage.from('request_files').upload(fileName, gerberFile, {
+            contentType: 'application/zip',
+            upsert: true,
+          });
+          if (err2) {
+            uploadError = new Error(`Storage upload failed: ${err2.message}`);
+          } else {
+            bucketUsed = 'request_files';
+          }
+        }
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data: publicData } = supabase.storage.from(bucketUsed).getPublicUrl(fileName);
+        finalGerberUrl = publicData.publicUrl;
+      }
+
+      // 2. Call /api/complete-request with direct component link or Gerber download URL
       const res = await fetch('/api/complete-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          requestId: req.id,
+          requestId: completingReq.id,
           adminSecret: secret,
-          componentName: req.component_name,
-          userEmail: req.user_email,
+          requestType: completionType,
+          componentName: completingReq.component_name,
+          userEmail: completingReq.user_email,
+          componentId: selectedComponentId || undefined,
+          gerberUrl: finalGerberUrl || undefined,
+          gerberFileName: gerberFile?.name,
+          manufacturingNotes: completionType === 'project' ? manufacturingNotes : undefined,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to complete request');
 
-      if (data.emailSent) {
-        window.alert(`Request marked as Completed! Email notification sent to ${req.user_email} 📧`);
-      } else if (data.warning) {
-        window.alert(`Request marked as Completed! ⚠️ ${data.warning}`);
-      } else {
-        window.alert('Request marked as Completed!');
-      }
+      await fetchRequests();
 
-      fetchRequests();
+      setCompletionSuccess(
+        completionType === 'project'
+          ? `✓ Project completed! Gerber download notification sent to ${completingReq.user_email || 'client'} 🚀`
+          : `✓ Component completed! Direct link notification sent to ${completingReq.user_email || 'user'} 📧`
+      );
+
+      setTimeout(() => {
+        setCompletingReq(null);
+      }, 1600);
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        window.alert(`Error: ${err.message}`);
-      } else {
-        window.alert('An unknown error occurred.');
-      }
+      setCompletionError(err instanceof Error ? err.message : 'An error occurred during completion.');
     } finally {
-      setCompletingId(null);
+      setIsSubmittingCompletion(false);
     }
   };
 
@@ -319,7 +425,8 @@ export default function AdminDashboard() {
   };
 
   const handlePrefillUpload = (req: ComponentRequestRecord) => {
-    setName(req.component_name);
+    const cleanName = req.component_name.replace(/^\[(PCB Project|Component)\]\s*/i, '');
+    setName(cleanName);
     let desc = req.description ? `Requested by ${req.user_email || 'user'}: ${req.description}` : `Requested by ${req.user_email || 'user'}`;
     if (req.component_link) {
       desc = desc ? `${desc}\n\nReference Link: ${req.component_link}` : `Reference Link: ${req.component_link}`;
@@ -370,6 +477,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="max-w-5xl mx-auto py-12 px-4 animate-in fade-in duration-500 relative z-10">
+      {/* CROP MODAL */}
       {cropTarget && (
         <ImageCropModal
           imageSrc={cropImageSrc}
@@ -382,10 +490,253 @@ export default function AdminDashboard() {
         />
       )}
 
+      {/* COMPLETION & GERBER DELIVERY MODAL */}
+      {completingReq && (
+        <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative my-8">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+              <div>
+                <span className="text-xs font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                  {completionType === 'project' ? '⚡ PCB Project Delivery' : '🧩 Component Fulfillment'}
+                </span>
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-2">
+                  {completionType === 'project' ? 'Deliver Gerber Files & Notify Client' : 'Complete & Send Direct Link'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCompletingReq(null)}
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-lg font-bold transition-colors"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Type Toggle Pills */}
+            <div className="flex bg-slate-100 p-1.5 rounded-2xl mb-6 border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setCompletionType('project')}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all ${
+                  completionType === 'project' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                ⚡ PCB Project Design (Gerber ZIP)
+              </button>
+              <button
+                type="button"
+                onClick={() => setCompletionType('component')}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all ${
+                  completionType === 'component' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                🧩 Component (Symbol & Footprint)
+              </button>
+            </div>
+
+            {/* Target Client Info */}
+            <div className="bg-slate-50 rounded-2xl p-4 mb-6 border border-slate-100 text-sm space-y-1">
+              <div className="flex justify-between">
+                <span className="font-semibold text-slate-500">Request:</span>
+                <span className="font-bold text-slate-800">{completingReq.component_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-semibold text-slate-500">Recipient Email:</span>
+                <span className="font-bold text-blue-600">{completingReq.user_email || 'None provided'}</span>
+              </div>
+            </div>
+
+            {/* FORM BODY FOR PCB PROJECT */}
+            {completionType === 'project' && (
+              <div className="space-y-5 mb-6">
+                
+                {/* 1. Gerber ZIP Archive Upload */}
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-2">
+                    Upload Final Gerber Files (.ZIP) <span className="text-red-500">*</span>
+                  </label>
+                  
+                  <div className="relative border-2 border-dashed border-slate-300 hover:border-blue-500 bg-slate-50/70 rounded-2xl p-6 text-center transition-all group">
+                    <input
+                      type="file"
+                      accept=".zip,application/zip,application/x-zip-compressed"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          setGerberFile(e.target.files[0]);
+                        }
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    
+                    {gerberFile ? (
+                      <div className="flex items-center justify-center gap-3">
+                        <span className="text-3xl">📦</span>
+                        <div className="text-left">
+                          <p className="font-bold text-slate-900 text-sm">{gerberFile.name}</p>
+                          <p className="text-xs text-slate-500">{(gerberFile.size / 1024 / 1024).toFixed(2)} MB • Ready to Upload</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setGerberFile(null);
+                          }}
+                          className="text-xs bg-red-100 hover:bg-red-200 text-red-700 font-bold px-2 py-1 rounded-lg ml-2"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <span className="text-3xl block mb-2">📁</span>
+                        <p className="text-sm font-bold text-slate-700 group-hover:text-blue-600">
+                          Click to select Gerber ZIP Archive
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1">Accepts .zip with copper, mask, drill, and outline layers</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 2. Or Enter Hosted Gerber URL */}
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                    Or Existing Gerber URL (Optional if file uploaded)
+                  </label>
+                  <input
+                    type="url"
+                    value={gerberUrlInput}
+                    onChange={(e) => setGerberUrlInput(e.target.value)}
+                    placeholder="https://.../gerber_package.zip"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 font-medium focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    The email button will be named <strong>&quot;Download Gerber Files&quot;</strong> and link directly to this file.
+                  </p>
+                </div>
+
+                {/* 3. Manufacturing Specifications */}
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                    Manufacturing &amp; Layer Specifications
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={manufacturingNotes}
+                    onChange={(e) => setManufacturingNotes(e.target.value)}
+                    placeholder="2-Layer FR4 1.6mm, 1oz Copper, Green solder mask, White silkscreen, Lead-Free HASL..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 font-medium focus:ring-2 focus:ring-blue-500 outline-none"
+                  ></textarea>
+                </div>
+
+              </div>
+            )}
+
+            {/* FORM BODY FOR COMPONENT */}
+            {completionType === 'component' && (
+              <div className="space-y-5 mb-6">
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-2">
+                    Link Published Component in Catalog <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={selectedComponentId}
+                    onChange={(e) => setSelectedComponentId(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                  >
+                    <option value="">-- Auto-detect by Request Name --</option>
+                    {components.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} (ID: {c.id})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-slate-400 mt-1.5">
+                    The notification email button will be named <strong>&quot;View Symbol &amp; Footprint&quot;</strong> and will take the user directly to the component detail page.
+                  </p>
+                </div>
+
+                {selectedComponentId && (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-800 flex items-center justify-between">
+                    <span>✓ Will link directly to: <strong>/components/{selectedComponentId}</strong></span>
+                    <Link
+                      href={`/components/${selectedComponentId}`}
+                      target="_blank"
+                      className="font-black underline hover:text-emerald-950"
+                    >
+                      Preview &rarr;
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Admin Secret Confirmation */}
+            <div className="mb-6">
+              <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                Admin Secret Key <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="password"
+                value={adminSecret}
+                onChange={(e) => setAdminSecret(e.target.value)}
+                placeholder="Enter secret key..."
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 font-medium focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+
+            {/* Status Feedback */}
+            {completionError && (
+              <div className="mb-5 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-bold">
+                ⚠️ {completionError}
+              </div>
+            )}
+            {completionSuccess && (
+              <div className="mb-5 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-bold">
+                {completionSuccess}
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setCompletingReq(null)}
+                disabled={isSubmittingCompletion}
+                className="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                Cancel
+              </button>
+              
+              <button
+                type="button"
+                onClick={handleExecuteCompletion}
+                disabled={isSubmittingCompletion}
+                className="px-6 py-2.5 rounded-xl text-sm font-black text-white bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all shadow-md shadow-blue-500/20 disabled:opacity-60 flex items-center gap-2"
+              >
+                {isSubmittingCompletion ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Uploading &amp; Dispatching...</span>
+                  </>
+                ) : (
+                  <span>
+                    {completionType === 'project' ? 'Deliver Gerber Files & Email Client 🚀' : 'Complete & Dispatch Link 📧'}
+                  </span>
+                )}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       {/* Top Header */}
       <div className="text-center mb-8">
         <h1 className="text-4xl font-black tracking-tight mb-3 text-slate-900">Admin Control Center</h1>
-        <p className="text-slate-500 font-medium text-lg">Manage components, process user requests, and dispatch email notifications.</p>
+        <p className="text-slate-500 font-medium text-lg">Manage components, deliver Gerber files, and dispatch verified client notifications.</p>
       </div>
 
       {/* Navigation Tabs */}
@@ -396,7 +747,7 @@ export default function AdminDashboard() {
             onClick={() => setAdminSection('catalog')}
             className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all ${adminSection === 'catalog' ? 'bg-white text-slate-900 shadow-md' : 'text-slate-600 hover:text-slate-900'}`}
           >
-            <span>⚡ Component Catalog & Upload</span>
+            <span>⚡ Component Catalog &amp; Upload</span>
             <span className="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-xs font-black">{components.length}</span>
           </button>
           <button
@@ -499,55 +850,67 @@ export default function AdminDashboard() {
                   <input type="file" accept="image/*" onChange={e => handleFileSelectForCrop(e, 'footprintPreview')} className="absolute inset-0 opacity-0 cursor-pointer" />
                 </div>
               </div>
-
             </div>
 
             <div className="pt-6 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* FILES SECTION */}
-              <div className="col-span-1">
-                <label className="block text-sm font-bold text-slate-700 mb-3 tracking-wide uppercase">Schematic Symbol (.lib)</label>
-                <div className="relative">
-                  <input type="file" onChange={e => setSymbolFile(e.target.files?.[0] || null)} className="w-full text-sm text-slate-500 file:mr-5 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer transition-colors" />
-                  {editingComponentId && !symbolFile && <div className="text-xs text-slate-400 mt-2 ml-2">Leave blank to keep existing file</div>}
-                </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-3 tracking-wide uppercase">KiCad Symbol File (.kicad_sym)</label>
+                <input type="file" onChange={e => setSymbolFile(e.target.files ? e.target.files[0] : null)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-700 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all cursor-pointer" />
               </div>
-              <div className="col-span-1">
-                <label className="block text-sm font-bold text-slate-700 mb-3 tracking-wide uppercase">PCB Footprint (.kicad_mod)</label>
-                <div className="relative">
-                  <input type="file" onChange={e => setFootprintFile(e.target.files?.[0] || null)} className="w-full text-sm text-slate-500 file:mr-5 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100 cursor-pointer transition-colors" />
-                  {editingComponentId && !footprintFile && <div className="text-xs text-slate-400 mt-2 ml-2">Leave blank to keep existing file</div>}
-                </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-3 tracking-wide uppercase">KiCad Footprint File (.kicad_mod)</label>
+                <input type="file" onChange={e => setFootprintFile(e.target.files ? e.target.files[0] : null)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-700 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 transition-all cursor-pointer" />
               </div>
             </div>
 
-            <div className="pt-8 mt-8 border-t border-slate-100">
-              <label className="block text-sm font-bold text-slate-700 mb-3 tracking-wide uppercase">Admin Secret Key (Required for {editingComponentId ? 'Update' : 'Upload'})</label>
-              <input type="password" value={adminSecret} onChange={e => setAdminSecret(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all" placeholder="Enter admin secret to verify action" />
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-3 tracking-wide uppercase">Admin Secret Code</label>
+              <input type="password" value={adminSecret} onChange={e => setAdminSecret(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all" placeholder="Enter Admin Secret..." />
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 mt-4">
-              <button type="submit" disabled={loading} className="flex-1 py-5 bg-slate-900 hover:bg-slate-800 text-white font-black text-lg tracking-wide rounded-xl shadow-xl shadow-slate-900/20 transition-all disabled:opacity-50 active:scale-95">
-                {loading ? 'Processing...' : (editingComponentId ? 'Update Component' : 'Deploy Component')}
+            <div className="flex gap-4">
+              <button type="submit" disabled={loading} className="flex-1 bg-slate-900 hover:bg-blue-600 text-white font-black py-5 px-8 rounded-2xl transition-all duration-300 shadow-xl shadow-slate-900/10 hover:shadow-blue-600/20 active:scale-95 disabled:opacity-50">
+                {loading ? 'Publishing Component...' : (editingComponentId ? 'Update Component ✨' : 'Publish Component to Catalog 🚀')}
               </button>
               {editingComponentId && (
-                <button type="button" onClick={resetForm} disabled={loading} className="py-5 px-8 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-lg tracking-wide rounded-xl transition-all disabled:opacity-50 active:scale-95 border border-slate-200">
+                <button type="button" onClick={resetForm} className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-5 px-8 rounded-2xl transition-all">
                   Cancel Edit
                 </button>
               )}
             </div>
           </form>
 
-          {/* MANAGE COMPONENTS LIST */}
-          <div className="mt-16">
-            <h2 className="text-3xl font-black mb-6 text-slate-900 tracking-tight">Manage Catalog Components</h2>
-            <div className="space-y-4">
+          {/* Catalog List */}
+          <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 md:p-10 shadow-xl shadow-slate-200/50">
+            <h2 className="text-2xl font-black text-slate-900 mb-6">Existing Components ({components.length})</h2>
+            <div className="grid grid-cols-1 gap-4">
               {components.length > 0 ? components.map(comp => (
-                <div key={comp.id} className={`flex justify-between items-center p-6 rounded-2xl border shadow-sm hover:shadow-md transition-all ${editingComponentId === comp.id ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-200'}`}>
-                  <div className="pr-4">
-                    <h3 className="text-xl font-bold text-slate-800">{comp.name} {editingComponentId === comp.id && <span className="ml-2 text-xs bg-blue-600 text-white px-2 py-1 rounded-full uppercase tracking-widest font-bold">Editing</span>}</h3>
-                    <p className="text-slate-500 text-sm mt-1">{comp.description?.substring(0, 60)}...</p>
+                <div key={comp.id} className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-slate-300 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 overflow-hidden flex-shrink-0 flex items-center justify-center p-1">
+                      {comp.component_image_url ? (
+                        <img src={comp.component_image_url} alt={comp.name} className="w-full h-full object-contain" />
+                      ) : (
+                        <span className="text-2xl">📦</span>
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-black text-slate-900 text-lg">{comp.name}</h3>
+                        <span className="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-bold">ID: {comp.id}</span>
+                      </div>
+                      <p className="text-slate-500 text-sm line-clamp-1 mt-0.5">{comp.description}</p>
+                    </div>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
+                    <Link
+                      href={`/components/${comp.id}`}
+                      target="_blank"
+                      className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-sm"
+                    >
+                      View ↗
+                    </Link>
                     <button 
                       onClick={() => handleEditComponent(comp)}
                       className="px-5 py-2.5 bg-blue-100 hover:bg-blue-600 hover:text-white text-blue-700 font-bold rounded-xl transition-colors"
@@ -575,9 +938,9 @@ export default function AdminDashboard() {
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <div>
-              <h2 className="text-2xl font-black text-slate-900">User Component Requests</h2>
+              <h2 className="text-2xl font-black text-slate-900">User Requests &amp; Project Fulfillment</h2>
               <p className="text-slate-500 text-sm mt-1">
-                Review requests from users, upload files, and send completion notification emails (support:{' '}
+                Deliver Gerber ZIP archives for PCB projects, fulfill component requests with direct links, and manage timeline updates (support:{' '}
                 <a
                   href="mailto:ssquareelectronics2026@gmail.com?subject=Regarding%20PCB%20Component%20Request"
                   className="text-blue-600 hover:underline font-semibold"
@@ -615,7 +978,9 @@ export default function AdminDashboard() {
           <div className="space-y-4">
             {filteredRequests.length > 0 ? filteredRequests.map(req => {
               const isCompleted = req.status === 'Completed';
-              const isProcessing = completingId === req.id;
+              const isProj = isPcbProjectRequest(req);
+              const gerberUrl = getGerberUrl(req);
+              const matchedComp = getMatchedComponent(req);
 
               return (
                 <div 
@@ -624,9 +989,20 @@ export default function AdminDashboard() {
                 >
                   <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-4 mb-4">
                     <div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2.5 flex-wrap">
                         <h3 className="text-xl font-black text-slate-900">{req.component_name}</h3>
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider ${isCompleted ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}`}>
+                        
+                        {/* Request Category Badge */}
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider ${
+                          isProj
+                            ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                            : 'bg-blue-100 text-blue-800 border border-blue-200'
+                        }`}>
+                          {isProj ? '⚡ PCB Project Design' : '🧩 KiCAD Component'}
+                        </span>
+
+                        {/* Status Badge */}
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wider ${isCompleted ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}`}>
                           {isCompleted ? '✓ Completed' : '⏳ Pending'}
                         </span>
                       </div>
@@ -656,21 +1032,31 @@ export default function AdminDashboard() {
                         📅 Date Extension
                       </button>
 
+                      {/* Main Complete / Deliver Action */}
                       <button
-                        onClick={() => handleCompleteRequest(req)}
-                        disabled={isProcessing}
-                        className={`px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm active:scale-95 ${isCompleted ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'}`}
+                        onClick={() => openCompletionModal(req)}
+                        className={`px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm active:scale-95 ${
+                          isCompleted
+                            ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                            : isProj
+                            ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
+                        }`}
                       >
-                        {isProcessing ? 'Dispatching...' : (isCompleted ? 'Resend Email 📧' : '✓ Mark Completed & Email User')}
+                        {isCompleted
+                          ? (isProj ? 'Resend Gerber Email 📧' : 'Resend Email 📧')
+                          : (isProj ? '🚀 Deliver Gerber & Complete' : '✓ Complete & Link Component')}
                       </button>
 
-                      <button
-                        onClick={() => handlePrefillUpload(req)}
-                        className="px-4 py-2.5 rounded-xl font-bold text-sm bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 transition-colors"
-                        title="Copy part name into upload form above"
-                      >
-                        Deploy This Component 🚀
-                      </button>
+                      {!isProj && (
+                        <button
+                          onClick={() => handlePrefillUpload(req)}
+                          className="px-4 py-2.5 rounded-xl font-bold text-sm bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 transition-colors"
+                          title="Copy part name into upload form above"
+                        >
+                          Deploy This Component 🚀
+                        </button>
+                      )}
 
                       <button
                         onClick={() => handleDeleteRequest(req)}
@@ -682,7 +1068,47 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {req.component_link && (
+                  {/* Attached Gerber Download Pill if completed */}
+                  {gerberUrl && (
+                    <div className="mb-3 p-3 bg-emerald-100/70 border border-emerald-300 rounded-2xl flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">📦</span>
+                        <div>
+                          <p className="text-xs font-black uppercase text-emerald-900 tracking-wider">
+                            Gerber Manufacturing Package Available
+                          </p>
+                          <p className="text-xs text-emerald-800 truncate max-w-sm sm:max-w-md">{gerberUrl}</p>
+                        </div>
+                      </div>
+                      <a
+                        href={gerberUrl}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black rounded-xl transition-all shadow-sm flex-shrink-0"
+                      >
+                        Download Gerber Files (.zip) &darr;
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Linked Catalog Component Preview */}
+                  {!isProj && matchedComp && (
+                    <div className="mb-3 p-2.5 bg-blue-50/70 border border-blue-200 rounded-xl flex items-center justify-between text-xs">
+                      <span className="text-blue-900 font-medium">
+                        🔗 Linked Component in Catalog: <strong>{matchedComp.name}</strong>
+                      </span>
+                      <Link
+                        href={`/components/${matchedComp.id}`}
+                        target="_blank"
+                        className="text-blue-700 hover:text-blue-900 font-bold underline"
+                      >
+                        View /components/{matchedComp.id} &rarr;
+                      </Link>
+                    </div>
+                  )}
+
+                  {req.component_link && !gerberUrl && (
                     <div className="mb-3">
                       <a
                         href={req.component_link}

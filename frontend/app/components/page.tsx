@@ -1,13 +1,23 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { motion, AnimatePresence, type Variants } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 
-export default function ComponentsCatalogPage() {
+function CatalogContent() {
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams?.get('search') || '';
   const [components, setComponents] = useState<any[]>([]);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(initialQuery);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = searchParams?.get('search');
+    if (q !== null && q !== undefined) {
+      setSearch(q);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchComponents();
@@ -160,23 +170,22 @@ export default function ComponentsCatalogPage() {
                         <h3 className="text-xl font-bold text-slate-900 mb-2 tracking-tight group-hover:text-blue-600 transition-colors">
                           {comp.name}
                         </h3>
-                        <p className="text-slate-500 text-sm line-clamp-2 leading-relaxed">
-                          {comp.description || 'Verified schematic symbol and PCB footprint.'}
+                        <p className="text-slate-500 text-sm line-clamp-2 leading-relaxed mb-4 font-normal">
+                          {comp.description || 'Verified KiCad symbol and footprint available for free download.'}
                         </p>
                       </div>
-
-                      <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                        <div className="flex flex-wrap gap-1.5">
-                          {comp.tags ? comp.tags.split(',').slice(0, 3).map((tag: string, i: number) => (
-                            <span key={i} className="px-2.5 py-1 bg-slate-100 border border-slate-200/60 text-[11px] font-bold rounded-lg text-slate-600">
-                              {tag.trim()}
-                            </span>
-                          )) : (
-                            <span className="text-xs text-slate-400 font-medium">Verified CAD</span>
-                          )}
+                      
+                      <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <div className="flex gap-2">
+                          <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg font-bold border border-blue-100/60">
+                            Symbol
+                          </span>
+                          <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg font-bold border border-emerald-100/60">
+                            Footprint
+                          </span>
                         </div>
-                        <span className="text-blue-600 font-black text-sm group-hover:translate-x-1 transition-transform inline-flex items-center gap-0.5">
-                          <span>View</span>
+                        <span className="text-xs font-bold text-slate-400 group-hover:text-blue-600 transition-colors inline-flex items-center gap-1">
+                          <span>Details</span>
                           <span>&rarr;</span>
                         </span>
                       </div>
@@ -210,5 +219,20 @@ export default function ComponentsCatalogPage() {
         </motion.div>
       )}
     </div>
+  );
+}
+
+export default function ComponentsCatalogPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="text-center py-24 text-slate-400 font-bold text-lg flex flex-col items-center gap-3">
+          <div className="w-9 h-9 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <span>Loading catalog...</span>
+        </div>
+      }
+    >
+      <CatalogContent />
+    </Suspense>
   );
 }
