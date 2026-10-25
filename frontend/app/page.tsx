@@ -15,11 +15,11 @@ export default function HomePage() {
         
         <div className="relative z-10 max-w-4xl mx-auto space-y-6">
           {/* Brand Logo Presentation */}
-          <div className="inline-flex p-3 rounded-3xl bg-white border border-slate-200 shadow-lg shadow-blue-900/5 mb-2 hover:scale-105 transition-transform duration-300">
+          <div className="inline-flex items-center justify-center p-2 mb-2 hover:scale-105 transition-transform duration-300">
             <img 
-              src="/logo.jpg" 
+              src="/logo.png" 
               alt="S SQUARE ELECTRONICS Logo" 
-              className="w-24 h-24 sm:w-28 sm:h-28 object-contain rounded-2xl" 
+              className="w-32 sm:w-44 h-auto max-h-28 sm:max-h-36 object-contain drop-shadow-sm" 
             />
           </div>
 

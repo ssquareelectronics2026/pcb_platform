@@ -5,6 +5,9 @@ import Navbar from '@/components/Navbar';
 export const metadata: Metadata = {
   title: 'S SQUARE ELECTRONICS | PCB Component Hub',
   description: 'Download verified KiCAD PCB Footprints & Schematic Symbols by S SQUARE ELECTRONICS',
+  icons: {
+    icon: '/logo.png',
+  },
 };
 
 export default function RootLayout({

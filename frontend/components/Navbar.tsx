@@ -27,11 +27,13 @@ export default function Navbar() {
           
           {/* Brand Logo & Title */}
           <Link href="/" className="flex items-center gap-3.5 group flex-shrink-0">
-            <img 
-              src="/logo.jpg" 
-              alt="S SQUARE ELECTRONICS Logo" 
-              className="w-11 h-11 object-contain rounded-xl border border-slate-200/80 shadow-sm group-hover:scale-105 transition-transform duration-300" 
-            />
+            <div className="flex items-center justify-center bg-transparent">
+              <img 
+                src="/logo.png" 
+                alt="S SQUARE ELECTRONICS Logo" 
+                className="h-11 w-auto max-w-[52px] object-contain group-hover:scale-105 transition-transform duration-300" 
+              />
+            </div>
             <div className="flex flex-col">
               <span className="text-base sm:text-lg font-black tracking-tight text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">
                 S SQUARE ELECTRONICS
