@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import TutorialStepCard from '@/components/TutorialStepCard';
 
 export const metadata = {
   title: 'KiCAD Symbol Tutorial | PCB Component Hub',
@@ -76,10 +77,10 @@ export default function SymbolTutorialPage() {
       {/* Navigation breadcrumb */}
       <div className="mb-6 flex items-center justify-between">
         <Link 
-          href="/" 
+          href="/components" 
           className="text-blue-600 hover:text-blue-800 font-semibold text-sm inline-flex items-center gap-1.5 transition-colors"
         >
-          &larr; Back to Library
+          &larr; Back to Components
         </Link>
         <Link
           href="/tutorial/footprint"
@@ -90,7 +91,7 @@ export default function SymbolTutorialPage() {
       </div>
 
       {/* Page Header */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-8 md:p-10 shadow-sm mb-10 text-center">
+      <div className="bg-white/80 border border-slate-200/90 backdrop-blur-sm rounded-3xl p-8 md:p-10 shadow-sm mb-10 text-center">
         <span className="inline-block text-xs uppercase font-extrabold tracking-widest text-blue-600 bg-blue-50 border border-blue-100 rounded-full px-4 py-1.5 mb-4">
           KiCAD Documentation
         </span>
@@ -102,60 +103,26 @@ export default function SymbolTutorialPage() {
         </h2>
       </div>
 
-      {/* Tutorial Steps */}
+      {/* Tutorial Steps with Motion */}
       <div className="space-y-8">
-        {steps.map((item) => (
-          <div 
-            key={item.stepNumber}
-            className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-start gap-4">
-              <span className="flex-shrink-0 w-10 h-10 rounded-2xl bg-blue-600 text-white font-black text-base flex items-center justify-center shadow-md shadow-blue-600/20">
-                {item.stepNumber}
-              </span>
-              <div className="flex-1 pt-1.5">
-                <p className="text-base sm:text-lg text-slate-800 font-semibold leading-relaxed">
-                  <span className="font-bold text-slate-900">{item.title}: </span>
-                  {item.text}
-                </p>
-
-                {/* Display step image if present */}
-                {item.image && (
-                  <div className="mt-5 rounded-2xl border border-slate-200 overflow-hidden bg-slate-50 shadow-inner">
-                    <img
-                      src={item.image}
-                      alt={item.alt || item.title}
-                      className="w-full h-auto object-contain max-h-[540px] mx-auto block hover:scale-[1.01] transition-transform duration-300"
-                      loading="lazy"
-                    />
-                  </div>
-                )}
-
-                {/* Prominent Link to Footprint Tutorial right below Step 9 */}
-                {item.hasFootprintLink && (
-                  <div className="mt-6 pt-4 border-t border-slate-100">
-                    <Link
-                      href="/tutorial/footprint"
-                      className="inline-flex items-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 transition-all text-base active:scale-95"
-                    >
-                      <span>Footprint Tutorial</span>
-                      <span aria-hidden="true">&rarr;</span>
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+        {steps.map((item, index) => (
+          <TutorialStepCard key={item.stepNumber} item={item} index={index} />
         ))}
       </div>
 
       {/* Bottom Navigation */}
-      <div className="mt-12 text-center pt-8 border-t border-slate-200">
+      <div className="mt-12 text-center pt-8 border-t border-slate-200 flex flex-wrap items-center justify-center gap-4">
         <Link 
-          href="/" 
-          className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold text-sm transition-colors"
+          href="/components" 
+          className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 transition-all text-sm active:scale-95"
         >
           &larr; Back to Component Library
+        </Link>
+        <Link 
+          href="/tutorial/footprint" 
+          className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-700 hover:text-blue-600 font-bold rounded-xl shadow-sm hover:shadow transition-all text-sm active:scale-95"
+        >
+          View Footprint Tutorial &rarr;
         </Link>
       </div>
     </div>

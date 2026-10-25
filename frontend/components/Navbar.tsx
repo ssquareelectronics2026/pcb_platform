@@ -2,6 +2,7 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -21,27 +22,31 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+    <motion.nav 
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           
           {/* Brand Logo & Title */}
           <Link href="/" className="flex items-center gap-3.5 group flex-shrink-0">
-            <div className="flex items-center justify-center bg-transparent">
+            <motion.div 
+              whileHover={{ scale: 1.08, rotate: 2 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center justify-center bg-transparent"
+            >
               <img 
                 src="/logo.png" 
                 alt="S SQUARE ELECTRONICS Logo" 
-                className="h-11 w-auto max-w-[52px] object-contain group-hover:scale-105 transition-transform duration-300" 
+                className="h-11 w-auto max-w-[52px] object-contain transition-transform duration-300" 
               />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-base sm:text-lg font-black tracking-tight text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">
-                S SQUARE ELECTRONICS
-              </span>
-              <span className="text-xs font-bold text-blue-600 tracking-wide uppercase">
-                PCB Component Hub
-              </span>
-            </div>
+            </motion.div>
+            <span className="text-base sm:text-lg md:text-xl font-black tracking-tight text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">
+              S SQUARE ELECTRONICS
+            </span>
           </Link>
 
           {/* Desktop Navigation Tabs */}
@@ -49,35 +54,43 @@ export default function Navbar() {
             {navItems.map((item) => {
               const active = isLinkActive(item.href, item.exact);
               return (
-                <Link
+                <motion.div
                   key={item.name}
-                  href={item.href}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                    active
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.97 }}
                 >
-                  {item.name}
-                </Link>
+                  <Link
+                    href={item.href}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all inline-block ${
+                      active
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                </motion.div>
               );
             })}
 
             {/* External Download KiCAD link */}
-            <a
+            <motion.a
+              whileHover={{ scale: 1.05, y: -1 }}
+              whileTap={{ scale: 0.96 }}
               href="https://www.kicad.org/download/"
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-slate-900 hover:bg-blue-600 text-white shadow-sm transition-all active:scale-95"
+              className="ml-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-slate-900 hover:bg-blue-600 text-white shadow-sm transition-all shadow-slate-900/10 hover:shadow-blue-600/20"
             >
               <span>Download KiCAD</span>
               <span className="text-xs">↗</span>
-            </a>
+            </motion.a>
           </div>
 
           {/* Mobile Hamburger Button */}
           <div className="flex lg:hidden items-center">
-            <button
+            <motion.button
+              whileTap={{ scale: 0.92 }}
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2.5 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors"
@@ -92,47 +105,55 @@ export default function Navbar() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               )}
-            </button>
+            </motion.button>
           </div>
 
         </div>
       </div>
 
-      {/* Mobile Dropdown Menu */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-2 shadow-xl animate-in slide-in-from-top-2 duration-200">
-          {navItems.map((item) => {
-            const active = isLinkActive(item.href, item.exact);
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`block px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                  active
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-                    : 'text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                {item.name}
-              </Link>
-            );
-          })}
+      {/* Mobile Dropdown Menu with AnimatePresence */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-2 shadow-xl overflow-hidden"
+          >
+            {navItems.map((item) => {
+              const active = isLinkActive(item.href, item.exact);
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                    active
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                      : 'text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              );
+            })}
 
-          <div className="pt-2">
-            <a
-              href="https://www.kicad.org/download/"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center justify-between w-full px-4 py-3 rounded-xl text-sm font-bold bg-slate-900 text-white hover:bg-blue-600 transition-all shadow-md shadow-slate-900/10"
-            >
-              <span>Download KiCAD</span>
-              <span>↗</span>
-            </a>
-          </div>
-        </div>
-      )}
-    </nav>
+            <div className="pt-2">
+              <a
+                href="https://www.kicad.org/download/"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between w-full px-4 py-3 rounded-xl text-sm font-bold bg-slate-900 text-white hover:bg-blue-600 transition-all shadow-md shadow-slate-900/10"
+              >
+                <span>Download KiCAD</span>
+                <span>↗</span>
+              </a>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.nav>
   );
 }
