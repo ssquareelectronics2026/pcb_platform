@@ -13,12 +13,13 @@ export default function Navbar() {
     { name: 'Components', href: '/components', exact: false },
     { name: 'Symbol Tutorial', href: '/tutorial/symbol', exact: false },
     { name: 'Footprint Tutorial', href: '/tutorial/footprint', exact: false },
-    { name: 'Request Component', href: '/request', exact: false },
+    { name: 'Request Component', href: '/request/component', exact: false },
+    { name: 'Request Project Design', href: '/request/project', exact: false },
   ];
 
   const isLinkActive = (href: string, exact: boolean) => {
     if (exact) return pathname === href;
-    return pathname.startsWith(href);
+    return pathname === href || pathname.startsWith(href + '/');
   };
 
   return (
@@ -26,13 +27,13 @@ export default function Navbar() {
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm"
+      className="border-b border-slate-200 bg-white/85 backdrop-blur-md sticky top-0 z-50 shadow-sm"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           
           {/* Brand Logo & Title */}
-          <Link href="/" className="flex items-center gap-3.5 group flex-shrink-0">
+          <Link href="/" className="flex items-center gap-3 group flex-shrink-0">
             <motion.div 
               whileHover={{ scale: 1.08, rotate: 2 }}
               whileTap={{ scale: 0.95 }}
@@ -41,27 +42,27 @@ export default function Navbar() {
               <img 
                 src="/logo.png" 
                 alt="S SQUARE ELECTRONICS Logo" 
-                className="h-11 w-auto max-w-[52px] object-contain transition-transform duration-300" 
+                className="h-10 sm:h-11 w-auto max-w-[50px] object-contain transition-transform duration-300" 
               />
             </motion.div>
-            <span className="text-base sm:text-lg md:text-xl font-black tracking-tight text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">
+            <span className="text-sm sm:text-base md:text-lg font-black tracking-tight text-slate-900 leading-tight group-hover:text-blue-600 transition-colors whitespace-nowrap">
               S SQUARE ELECTRONICS
             </span>
           </Link>
 
           {/* Desktop Navigation Tabs */}
-          <div className="hidden lg:flex items-center gap-1.5">
+          <div className="hidden lg:flex items-center gap-1 xl:gap-1.5">
             {navItems.map((item) => {
               const active = isLinkActive(item.href, item.exact);
               return (
                 <motion.div
                   key={item.name}
-                  whileHover={{ scale: 1.04 }}
+                  whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                 >
                   <Link
                     href={item.href}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all inline-block ${
+                    className={`px-2.5 xl:px-3.5 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all inline-block whitespace-nowrap ${
                       active
                         ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -75,12 +76,12 @@ export default function Navbar() {
 
             {/* External Download KiCAD link */}
             <motion.a
-              whileHover={{ scale: 1.05, y: -1 }}
+              whileHover={{ scale: 1.04, y: -1 }}
               whileTap={{ scale: 0.96 }}
               href="https://www.kicad.org/download/"
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-slate-900 hover:bg-blue-600 text-white shadow-sm transition-all shadow-slate-900/10 hover:shadow-blue-600/20"
+              className="ml-1 xl:ml-2 inline-flex items-center gap-1 px-3 xl:px-3.5 py-2 rounded-xl text-xs xl:text-sm font-bold bg-slate-900 hover:bg-blue-600 text-white shadow-sm transition-all shadow-slate-900/10 hover:shadow-blue-600/20 whitespace-nowrap flex-shrink-0"
             >
               <span>Download KiCAD</span>
               <span className="text-xs">↗</span>
@@ -119,7 +120,7 @@ export default function Navbar() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className="lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-2 shadow-xl overflow-hidden"
+            className="lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-1.5 shadow-xl overflow-hidden"
           >
             {navItems.map((item) => {
               const active = isLinkActive(item.href, item.exact);
@@ -128,7 +129,7 @@ export default function Navbar() {
                   key={item.name}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                  className={`block px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
                     active
                       ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
                       : 'text-slate-700 hover:bg-slate-100'

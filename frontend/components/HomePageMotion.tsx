@@ -267,12 +267,20 @@ export default function HomePageMotion() {
                 Can&apos;t find a specific component? Submit a reference URL, datasheet, or part description. Our team will design, verify, and email you when it&apos;s ready.
               </p>
             </div>
-            <div className="pt-6 mt-6 border-t border-slate-100">
+            <div className="pt-6 mt-6 border-t border-slate-100 flex items-center gap-3">
               <Link
-                href="/request"
-                className="text-amber-700 font-bold text-sm inline-flex items-center gap-1.5 hover:gap-2.5 transition-all"
+                href="/request/component"
+                className="text-amber-700 font-bold text-sm inline-flex items-center gap-1 hover:underline"
               >
                 <span>Request Component</span>
+                <span>&rarr;</span>
+              </Link>
+              <span className="text-slate-300">•</span>
+              <Link
+                href="/request/project"
+                className="text-blue-600 font-bold text-sm inline-flex items-center gap-1 hover:underline"
+              >
+                <span>Project Design</span>
                 <span>&rarr;</span>
               </Link>
             </div>
@@ -366,21 +374,29 @@ export default function HomePageMotion() {
         <p className="text-slate-500 text-base max-w-lg mx-auto mb-8 font-medium">
           Browse our component catalog or request a custom footprint for your hardware project.
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-4">
+        <div className="flex flex-wrap items-center justify-center gap-3.5">
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
             <Link
               href="/components"
-              className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 transition-all text-sm inline-block"
+              className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 transition-all text-sm inline-block"
             >
               Browse Catalog &rarr;
             </Link>
           </motion.div>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
             <Link
-              href="/request"
-              className="px-8 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl transition-all text-sm inline-block border border-slate-200"
+              href="/request/component"
+              className="px-6 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl transition-all text-sm inline-block border border-slate-200"
             >
-              Request a Component
+              Request Component
+            </Link>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
+            <Link
+              href="/request/project"
+              className="px-6 py-3.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl transition-all text-sm inline-block border border-indigo-200"
+            >
+              Request Project Design
             </Link>
           </motion.div>
         </div>

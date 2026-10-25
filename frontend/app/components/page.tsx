@@ -104,7 +104,7 @@ export default function ComponentsCatalogPage() {
         </h2>
         <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
           <Link 
-            href="/request" 
+            href="/request/component" 
             className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center gap-1"
           >
             <span>Can&apos;t find a component? Request it</span>
@@ -199,7 +199,7 @@ export default function ComponentsCatalogPage() {
               </p>
               <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} className="inline-block">
                 <Link 
-                  href="/request" 
+                  href="/request/component" 
                   className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 text-sm transition-all"
                 >
                   Request This Component &rarr;
