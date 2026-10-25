@@ -67,6 +67,9 @@ export default function RequestProjectPage() {
     const trimmedProject = projectName.trim();
     const trimmedClient = clientName.trim();
     const trimmedEmail = userEmail.trim();
+    const trimmedComponents = componentList.trim();
+    const hasCircuitFile = Boolean(circuitFile);
+    const hasComponentReferences = Boolean(trimmedComponents);
 
     if (!trimmedProject) {
       setErrorMessage('Please enter your Project Name.');
@@ -82,6 +85,13 @@ export default function RequestProjectPage() {
 
     if (!trimmedEmail) {
       setErrorMessage('Please enter your Email Address.');
+      setLoading(false);
+      return;
+    }
+
+    // Circuit Diagram / Component References is strictly Mandatory (either file or references required)
+    if (!hasCircuitFile && !hasComponentReferences) {
+      setErrorMessage('Please provide either a Circuit Diagram file upload OR your Component References & Datasheets so our designer can engineer your board.');
       setLoading(false);
       return;
     }
@@ -210,6 +220,9 @@ export default function RequestProjectPage() {
     }
   };
 
+  const hasCircuitFile = Boolean(circuitFile);
+  const hasComponentReferences = Boolean(componentList.trim());
+
   return (
     <div className="max-w-3xl mx-auto py-10 px-4 sm:px-6 relative z-10">
       
@@ -241,12 +254,12 @@ export default function RequestProjectPage() {
         </div>
       </div>
 
-      {/* Helper Banner for Non-Engineers */}
+      {/* Helper Banner for Mandatory & Optional Fields */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-4 mb-6 text-xs sm:text-sm text-slate-700 flex items-start gap-3">
         <span className="text-xl flex-shrink-0">💡</span>
-        <p className="leading-relaxed font-medium">
-          <strong>Non-Engineers Welcome!</strong> You don&apos;t need complex technical knowledge. Simply attach your <strong>Circuit Diagram</strong> (hand-drawn sketch, wiring photo, or PDF) and tell us what the device is meant to do.
-        </p>
+        <div className="leading-relaxed font-medium">
+          <strong>Mandatory Information:</strong> Project Name, Client / Company Name, Email Address, and at least one technical reference (either a <strong>Circuit Diagram file upload</strong> <em>or</em> <strong>Component References / Datasheets</strong>) are strictly required. <strong>Constraints of Board</strong> is strictly optional!
+        </div>
       </div>
 
       {/* Error Message */}
@@ -312,10 +325,10 @@ export default function RequestProjectPage() {
         <div className="pt-2 border-t border-slate-100">
           <div className="flex justify-between items-center mb-2">
             <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
-              Circuit Diagram Upload
+              Circuit Diagram Upload {!hasComponentReferences && <span className="text-red-500">*</span>}
             </label>
-            <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100">
-              Optional / Recommended
+            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${hasCircuitFile ? 'bg-emerald-100 text-emerald-800' : hasComponentReferences ? 'bg-slate-100 text-slate-500' : 'bg-amber-100 text-amber-800'}`}>
+              {hasCircuitFile ? '✓ File selected' : hasComponentReferences ? 'Optional (References provided)' : 'Required if no references *'}
             </span>
           </div>
           <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center bg-slate-50/50 hover:bg-slate-50 transition-colors">
@@ -360,14 +373,14 @@ export default function RequestProjectPage() {
           </div>
         </div>
 
-        {/* ROW 4: Component List / References */}
+        {/* ROW 4: Component References & Datasheets */}
         <div>
           <div className="flex justify-between items-center mb-2">
             <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
-              Component List / References
+              Component References &amp; Datasheets {!hasCircuitFile && <span className="text-red-500">*</span>}
             </label>
-            <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
-              Optional
+            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${hasComponentReferences ? 'bg-emerald-100 text-emerald-800' : hasCircuitFile ? 'bg-slate-100 text-slate-500' : 'bg-amber-100 text-amber-800'}`}>
+              {hasComponentReferences ? '✓ References provided' : hasCircuitFile ? 'Optional (Diagram attached)' : 'Required if no diagram uploaded *'}
             </span>
           </div>
           <input
@@ -379,14 +392,14 @@ export default function RequestProjectPage() {
           />
         </div>
 
-        {/* ROW 5: Constraints of Board */}
+        {/* ROW 5: Constraints of Board (Strictly Optional) */}
         <div>
           <div className="flex justify-between items-center mb-2">
             <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
               Constraints of Board
             </label>
             <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
-              Optional (Leave blank if unsure)
+              Strictly Optional (Leave blank if unsure)
             </span>
           </div>
           <input
@@ -397,7 +410,7 @@ export default function RequestProjectPage() {
             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
           />
           <p className="text-[11px] text-slate-400 mt-1.5">
-            Mention any physical size limits or mounting requirements. If you don&apos;t have strict dimensions, our designer will choose the most cost-effective board size.
+            Strictly Optional: Mention any physical size limits or mounting requirements. If you don&apos;t have strict dimensions, our designer will choose the most cost-effective board size.
           </p>
         </div>
 

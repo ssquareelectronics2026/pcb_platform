@@ -27,31 +27,20 @@ export default function Navbar() {
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="border-b border-slate-200 bg-white/85 backdrop-blur-md sticky top-0 z-50 shadow-sm"
+      className="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-50 shadow-sm"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
+        <div className="flex justify-between items-center h-20 gap-4">
           
-          {/* Brand Logo & Title */}
-          <Link href="/" className="flex items-center gap-3 group flex-shrink-0">
-            <motion.div 
-              whileHover={{ scale: 1.08, rotate: 2 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center justify-center bg-transparent"
-            >
-              <img 
-                src="/logo.png" 
-                alt="S SQUARE ELECTRONICS Logo" 
-                className="h-10 sm:h-11 w-auto max-w-[50px] object-contain transition-transform duration-300" 
-              />
-            </motion.div>
-            <span className="text-sm sm:text-base md:text-lg font-black tracking-tight text-slate-900 leading-tight group-hover:text-blue-600 transition-colors whitespace-nowrap">
+          {/* Brand Text Title (Clean Font, Logo Image Completely Removed) */}
+          <Link href="/" className="flex items-center group flex-shrink-0 mr-2 sm:mr-6">
+            <span className="text-base sm:text-lg md:text-xl font-black tracking-tight text-slate-900 leading-none group-hover:text-blue-600 transition-colors whitespace-nowrap">
               S SQUARE ELECTRONICS
             </span>
           </Link>
 
-          {/* Desktop Navigation Tabs */}
-          <div className="hidden lg:flex items-center gap-1 xl:gap-1.5">
+          {/* Desktop Navigation Tabs with Generous Spacing */}
+          <div className="hidden lg:flex items-center gap-1 xl:gap-1.5 flex-shrink-0">
             {navItems.map((item) => {
               const active = isLinkActive(item.href, item.exact);
               return (

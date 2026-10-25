@@ -74,15 +74,14 @@ export default function RequestComponentPage() {
       }
     }
 
-    // 3. Flexible Validation: at least either a Link OR Description OR File
+    // 3. Flexible Validation: EITHER Datasheet Link OR File/Image must be provided
     const hasLink = Boolean(trimmedLink);
-    const hasDescription = Boolean(trimmedDesc);
     const hasFile = Boolean(file);
 
-    if (!hasLink && !hasDescription && !hasFile) {
+    if (!hasLink && !hasFile) {
       setStatusMessage({
         type: 'error',
-        text: 'Please provide at least one source of component details: a Reference URL, a Description, or attach a Datasheet/Image.',
+        text: 'Please provide at least one proof or reference: either a Datasheet Link (URL) OR an attached Datasheet / Image file.',
       });
       setLoading(false);
       return;
@@ -241,7 +240,7 @@ export default function RequestComponentPage() {
       <div className="bg-blue-50/70 border border-blue-200/80 rounded-2xl p-4 mb-6 text-xs sm:text-sm text-blue-950 flex items-start gap-3">
         <span className="text-xl flex-shrink-0">💡</span>
         <div className="leading-relaxed">
-          <span className="font-bold">Flexible Submission:</span> You can provide a product/datasheet <strong>Reference URL</strong>, <em>or</em> write package <strong>Details</strong>, <em>or</em> attach a <strong>Datasheet/Photo</strong>. Any one of the three is enough!
+          <span className="font-bold">Proof / Reference Requirement:</span> You must provide at least one proof or reference for your component: either provide a direct <strong>Datasheet Link (URL)</strong> <em>or</em> upload a <strong>Datasheet / Image file</strong>. Providing either one makes the other optional!
         </div>
       </div>
 
@@ -300,10 +299,10 @@ export default function RequestComponentPage() {
         <div className="pt-2 border-t border-slate-100">
           <div className="flex justify-between items-center mb-2">
             <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
-              Component Link / Reference URL
+              Datasheet Link / Reference URL {!hasFileInput && <span className="text-red-500">*</span>}
             </label>
-            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${hasLinkInput ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
-              {hasLinkInput ? '✓ URL provided' : 'Optional'}
+            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${hasLinkInput ? 'bg-emerald-100 text-emerald-800' : hasFileInput ? 'bg-slate-100 text-slate-500' : 'bg-amber-100 text-amber-800'}`}>
+              {hasLinkInput ? '✓ Link provided' : hasFileInput ? 'Optional (File attached)' : 'Required if no file uploaded *'}
             </span>
           </div>
           <input
@@ -324,7 +323,7 @@ export default function RequestComponentPage() {
             <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
               Details &amp; Package Requirements
             </label>
-            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${hasDescInput ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500">
               {hasDescInput ? '✓ Details provided' : 'Optional'}
             </span>
           </div>
@@ -341,10 +340,10 @@ export default function RequestComponentPage() {
         <div className="pt-2 border-t border-slate-100">
           <div className="flex justify-between items-center mb-2">
             <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
-              Attach Datasheet / Image (Optional)
+              Attach Datasheet / Image {!hasLinkInput && <span className="text-red-500">*</span>}
             </label>
-            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${hasFileInput ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
-              {hasFileInput ? '✓ File selected' : 'Optional'}
+            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${hasFileInput ? 'bg-emerald-100 text-emerald-800' : hasLinkInput ? 'bg-slate-100 text-slate-500' : 'bg-amber-100 text-amber-800'}`}>
+              {hasFileInput ? '✓ File selected' : hasLinkInput ? 'Optional (Link provided)' : 'Required if no link provided *'}
             </span>
           </div>
           <input
