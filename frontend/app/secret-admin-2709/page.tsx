@@ -72,6 +72,21 @@ export default function AdminDashboard() {
   const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
   const [completionError, setCompletionError] = useState('');
   const [completionSuccess, setCompletionSuccess] = useState('');
+  const [isSyncingSequence, setIsSyncingSequence] = useState(false);
+
+  // Helper to compute the lowest available positive integer ID gap
+  const getLowestAvailableId = (items: ComponentRecord[]): number => {
+    const existingSet = new Set(
+      items
+        .map((item) => Number(item.id))
+        .filter((n) => Number.isInteger(n) && n > 0)
+    );
+    let candidate = 1;
+    while (existingSet.has(candidate)) {
+      candidate++;
+    }
+    return candidate;
+  };
 
   useEffect(() => {
     fetchComponents();
@@ -182,7 +197,17 @@ export default function AdminDashboard() {
         const { error } = await supabase.from('components').delete().eq('id', comp.id);
         if (error) throw error;
 
-        window.alert('Component deleted successfully!');
+        // Auto-sync sequence in background to keep Postgres sequence aligned
+        fetch('/api/reset-sequence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            table: 'components',
+            adminSecret: secret,
+          }),
+        }).catch((e) => console.warn('Background sequence sync notice:', e));
+
+        window.alert(`Component #${comp.id} deleted successfully! (ID sequence updated)`);
         
         if (editingComponentId === comp.id) {
           resetForm();
@@ -195,6 +220,42 @@ export default function AdminDashboard() {
           window.alert('An unknown error occurred.');
         }
       }
+    }
+  };
+
+  const handleSyncSequence = async () => {
+    setIsSyncingSequence(true);
+    let secret = adminSecret || process.env.NEXT_PUBLIC_ADMIN_SECRET || '';
+    if (!secret) {
+      const enteredSecret = window.prompt('Enter Admin Secret Key to sync sequence:');
+      if (!enteredSecret) {
+        setIsSyncingSequence(false);
+        return;
+      }
+      secret = enteredSecret;
+      setAdminSecret(enteredSecret);
+    }
+
+    try {
+      const res = await fetch('/api/reset-sequence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          table: 'components',
+          adminSecret: secret,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to sync sequence');
+
+      await fetchComponents();
+      window.alert(
+        `✓ Sequence Synchronized!\n\nMax Existing ID: ${data.maxId}\nNext Available Gap ID: #${data.lowestAvailableId}\n\nAny deleted ID gaps will now be reused sequentially.`
+      );
+    } catch (err: unknown) {
+      window.alert(err instanceof Error ? err.message : 'Error syncing sequence');
+    } finally {
+      setIsSyncingSequence(false);
     }
   };
 
@@ -266,9 +327,21 @@ export default function AdminDashboard() {
         if (error) throw error;
         setMessage('Component updated successfully! 🎉');
       } else {
-        const { error } = await supabase.from('components').insert([payload]);
-        if (error) throw error;
-        setMessage('Component created successfully! 🎉');
+        // Intelligently reuse the lowest available ID gap (e.g. if rows were deleted)
+        const nextId = getLowestAvailableId(components);
+        const insertPayload = {
+          ...payload,
+          id: nextId,
+        };
+
+        const { error: insertError } = await supabase.from('components').insert([insertPayload]);
+        if (insertError) {
+          console.warn('Explicit ID insert note (falling back to auto sequence):', insertError.message);
+          const { error: fallbackError } = await supabase.from('components').insert([payload]);
+          if (fallbackError) throw fallbackError;
+        }
+
+        setMessage(`Component created successfully with ID #${nextId}! 🎉`);
       }
 
       resetForm();
@@ -886,7 +959,34 @@ export default function AdminDashboard() {
 
           {/* Catalog List */}
           <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 md:p-10 shadow-xl shadow-slate-200/50">
-            <h2 className="text-2xl font-black text-slate-900 mb-6">Existing Components ({components.length})</h2>
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6 pb-6 border-b border-slate-100">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900">Existing Components ({components.length})</h2>
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                  <span className="text-xs text-slate-500 font-medium">
+                    Next Available ID:
+                  </span>
+                  <span className="text-xs font-black px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                    #{getLowestAvailableId(components)}
+                  </span>
+                  <span className="text-[11px] text-emerald-700 font-extrabold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Gap-Filling Active ⚡
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleSyncSequence}
+                  disabled={isSyncingSequence}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors flex items-center gap-1.5 border border-slate-200"
+                  title="Synchronizes Postgres sequence and audits ID gaps"
+                >
+                  <span>🔄</span>
+                  <span>{isSyncingSequence ? 'Syncing...' : 'Sync ID Sequence'}</span>
+                </button>
+              </div>
+            </div>
             <div className="grid grid-cols-1 gap-4">
               {components.length > 0 ? components.map(comp => (
                 <div key={comp.id} className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-slate-300 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
