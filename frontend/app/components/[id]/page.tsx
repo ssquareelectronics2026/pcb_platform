@@ -80,8 +80,8 @@ export default function ComponentDetails() {
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center px-4">
         <h2 className="text-2xl font-black text-slate-800">Component Not Found</h2>
         <p className="text-slate-500">The component you are looking for does not exist or was deleted.</p>
-        <Link href="/" className="mt-4 px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition">
-          &larr; Back to Library
+        <Link href="/components" className="mt-4 px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition">
+          &larr; Back to Components
         </Link>
       </div>
     );
@@ -91,8 +91,8 @@ export default function ComponentDetails() {
 
   return (
     <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-500">
-      <Link href="/" className="text-blue-600 hover:text-blue-800 font-semibold mb-6 inline-flex items-center gap-2">
-        &larr; Back to Library
+      <Link href="/components" className="text-blue-600 hover:text-blue-800 font-semibold mb-6 inline-flex items-center gap-2">
+        &larr; Back to Components
       </Link>
 
       <div className="flex flex-col xl:flex-row gap-8">
