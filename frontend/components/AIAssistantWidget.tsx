@@ -3,42 +3,58 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
+interface MatchedComponent {
+  id: number | string;
+  name: string;
+  description?: string | null;
+  tags?: string | null;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  matchedComponents?: MatchedComponent[];
 }
 
 const STARTER_PROMPTS = [
   '🔍 What components are in the catalog?',
   '📐 How to import .kicad_sym into KiCAD?',
   '👣 How to add footprint .kicad_mod?',
-  '⚡ Request a custom PCB design & Gerber files',
+  '⚡ Request a custom PCB design',
   '❓ How to request a missing component?',
 ];
 
 /**
- * Parses markdown-style links [Text](url), bold **text**, and inline code `code`
+ * Parses markdown-style links [Text](url), bold **text**, and inline code `code`,
+ * while cleanly stripping raw symbols like ### or >.
  */
 function FormattedMessageContent({ content }: { content: string }) {
-  // Split into paragraphs / lines
-  const lines = content.split('\n');
+  // Pre-clean content to eliminate raw markdown headers (###, ##, #) and blockquotes (>)
+  const cleaned = content
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^>\s*/gm, '')
+    .trim();
+
+  const lines = cleaned.split('\n');
 
   return (
     <div className="space-y-1.5 text-xs sm:text-sm leading-relaxed">
       {lines.map((line, lineIdx) => {
         const trimmed = line.trim();
-        if (!trimmed) return <div key={lineIdx} className="h-1.5" />;
+        if (!trimmed) return <div key={lineIdx} className="h-1" />;
 
         const isBullet = trimmed.startsWith('- ') || trimmed.startsWith('* ') || /^\d+\.\s/.test(trimmed);
-        const cleanLine = isBullet ? trimmed.replace(/^[-*]\s+|\d+\.\s+/, '') : line;
+        const cleanLine = isBullet ? trimmed.replace(/^[-*]\s+|\d+\.\s+/, '') : trimmed;
 
         // Parse line into tokens of [link], **bold**, `code`, or text
         const tokenRegex = /(\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*|`[^`]+`)/g;
         const parts = cleanLine.split(tokenRegex);
 
         const renderedLine = parts.map((part, pIdx) => {
+          if (!part) return null;
+
           // Markdown Link: [Title](url)
           const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
           if (linkMatch) {
@@ -84,7 +100,7 @@ function FormattedMessageContent({ content }: { content: string }) {
           const codeMatch = part.match(/^`([^`]+)`$/);
           if (codeMatch) {
             return (
-              <code key={pIdx} className="px-1 py-0.5 bg-slate-100 text-blue-700 font-mono text-xs rounded border border-slate-200">
+              <code key={pIdx} className="px-1.5 py-0.5 bg-slate-100 text-blue-700 font-mono text-xs rounded border border-slate-200">
                 {codeMatch[1]}
               </code>
             );
@@ -115,7 +131,7 @@ export default function AIAssistantWidget() {
       id: 'welcome',
       role: 'assistant',
       content:
-        "Hello! 👋 I am your **S SQUARE ELECTRONICS AI Hardware Assistant** powered by Gemini. Ask me about verified KiCAD symbols, PCB footprints in our catalog, custom circuit design requests, or how to import `.kicad_sym` and `.kicad_mod` files into KiCAD!",
+        'Hello! 👋 I am the **S SQUARE ELECTRONICS AI Assistant**. Ask me about components in our catalog, KiCAD `.kicad_sym` / `.kicad_mod` imports, or custom PCB design!',
       timestamp: 'Just now',
     },
   ]);
@@ -151,7 +167,6 @@ export default function AIAssistantWidget() {
     setLoading(true);
 
     try {
-      // Prepare conversation history payload
       const historyPayload = newMessages
         .filter((m) => m.id !== 'welcome')
         .map((m) => ({
@@ -170,13 +185,14 @@ export default function AIAssistantWidget() {
       const data = await res.json();
       const replyText =
         data.reply ||
-        "I couldn't process your question at the moment. Please explore our [Components Catalog](/components) or submit your request at [Request Component](/request/component).";
+        'You can browse our [Components Catalog](/components) or submit your request at [Request Component](/request/component).';
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: replyText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        matchedComponents: data.matchedComponents,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -186,7 +202,7 @@ export default function AIAssistantWidget() {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content:
-          "I ran into a connection glitch. Please check your internet connection or browse our [KiCAD Components Catalog](/components) directly.",
+          'I ran into a temporary connection issue. Please explore our [Components Catalog](/components) or try asking again.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -201,7 +217,7 @@ export default function AIAssistantWidget() {
         id: 'welcome',
         role: 'assistant',
         content:
-          "Chat reset! 👋 How can I help you with your PCB projects, KiCAD footprints, or component library today?",
+          'Hello! 👋 I am the **S SQUARE ELECTRONICS AI Assistant**. Ask me about components in our catalog, KiCAD `.kicad_sym` / `.kicad_mod` imports, or custom PCB design!',
         timestamp: 'Just now',
       },
     ]);
@@ -219,25 +235,25 @@ export default function AIAssistantWidget() {
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
-              whileHover={{ scale: 1.06 }}
-              whileTap={{ scale: 0.94 }}
-              className="relative flex items-center gap-2.5 px-4 sm:px-5 py-3.5 bg-gradient-to-r from-slate-900 via-blue-900 to-blue-700 text-white rounded-full shadow-2xl shadow-blue-900/40 border border-blue-400/30 group transition-all"
-              aria-label="Open AI Hardware Assistant"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="relative flex items-center gap-2.5 px-4 sm:px-5 py-3.5 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-900 text-white rounded-full shadow-2xl shadow-blue-950/40 border border-blue-400/30 group transition-all"
+              aria-label="Open S SQUARE AI Assistant"
             >
               {/* Pulsing indicator beacon */}
-              <span className="relative flex h-3 w-3">
+              <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
               </span>
 
-              <span className="text-xl">🤖</span>
+              <span className="text-xl">⚡</span>
 
               <div className="text-left hidden sm:block">
                 <p className="text-xs font-black tracking-wide leading-none uppercase text-blue-200">
-                  AI Hardware Assistant
+                  S SQUARE AI Assistant
                 </p>
                 <p className="text-[10px] text-slate-300 font-medium leading-tight mt-0.5">
-                  S SQUARE ELECTRONICS
+                  Instant Hardware Support
                 </p>
               </div>
 
@@ -255,12 +271,12 @@ export default function AIAssistantWidget() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 30 }}
             transition={{ type: 'spring', damping: 25, stiffness: 280 }}
-            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[95vw] sm:w-[420px] h-[580px] max-h-[85vh] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in"
+            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[95vw] sm:w-[420px] h-[580px] max-h-[85vh] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden"
           >
-            {/* Header */}
+            {/* Header: S SQUARE AI Assistant & S SQUARE ELECTRONICS • Instant Hardware Support */}
             <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 p-4 text-white flex items-center justify-between border-b border-slate-800">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-emerald-500 flex items-center justify-center text-xl shadow-md border border-white/20">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-xl shadow-md border border-white/20">
                   ⚡
                 </div>
                 <div>
@@ -274,7 +290,7 @@ export default function AIAssistantWidget() {
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-300 font-medium">
-                    Powered by Gemini 2.5 Flash • Live Catalog
+                    S SQUARE ELECTRONICS • Instant Hardware Support
                   </p>
                 </div>
               </div>
@@ -307,12 +323,12 @@ export default function AIAssistantWidget() {
                 return (
                   <div
                     key={msg.id}
-                    className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[90%] ${
+                    className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[92%] ${
                       isUser ? 'ml-auto' : 'mr-auto'
                     }`}
                   >
                     <div
-                      className={`p-3.5 rounded-2xl shadow-sm text-slate-800 ${
+                      className={`p-3.5 rounded-2xl shadow-xs text-slate-800 ${
                         isUser
                           ? 'bg-blue-600 text-white rounded-br-none shadow-blue-500/10'
                           : 'bg-white border border-slate-200/90 rounded-bl-none shadow-slate-200/40'
@@ -321,7 +337,49 @@ export default function AIAssistantWidget() {
                       {isUser ? (
                         <p className="text-xs sm:text-sm font-medium whitespace-pre-wrap">{msg.content}</p>
                       ) : (
-                        <FormattedMessageContent content={msg.content} />
+                        <div>
+                          <FormattedMessageContent content={msg.content} />
+
+                          {/* Interactive Component Cards */}
+                          {msg.matchedComponents && msg.matchedComponents.length > 0 && (
+                            <div className="mt-3 pt-2.5 border-t border-slate-100 space-y-2">
+                              <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                <span>Verified Catalog Parts ({msg.matchedComponents.length}):</span>
+                              </div>
+                              <div className="space-y-1.5">
+                                {msg.matchedComponents.map((comp) => (
+                                  <div
+                                    key={comp.id}
+                                    className="bg-slate-50 hover:bg-blue-50/50 border border-slate-200/90 hover:border-blue-300 rounded-xl p-2.5 transition-all flex items-center justify-between gap-2.5 group"
+                                  >
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="font-bold text-slate-900 text-xs truncate group-hover:text-blue-600 transition-colors">
+                                          {comp.name}
+                                        </span>
+                                        <span className="bg-blue-100 text-blue-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-blue-200">
+                                          ID #{comp.id}
+                                        </span>
+                                      </div>
+                                      {comp.description && (
+                                        <p className="text-[10px] text-slate-500 truncate mt-0.5 font-normal">
+                                          {comp.description}
+                                        </p>
+                                      )}
+                                    </div>
+                                    <Link
+                                      href={`/components/${comp.id}`}
+                                      className="flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-[11px] font-bold rounded-lg transition-all shadow-xs"
+                                    >
+                                      <span>Open Component</span>
+                                      <span>&rarr;</span>
+                                    </Link>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                     <span className="text-[10px] text-slate-400 px-1 mt-1 font-semibold">
@@ -331,16 +389,16 @@ export default function AIAssistantWidget() {
                 );
               })}
 
-              {/* Typing indicator */}
+              {/* Fast Typing indicator */}
               {loading && (
                 <div className="flex flex-col items-start max-w-[85%] mr-auto">
-                  <div className="p-3.5 bg-white border border-slate-200 rounded-2xl rounded-bl-none shadow-sm flex items-center gap-2 text-slate-500 text-xs font-semibold">
+                  <div className="p-3 bg-white border border-slate-200 rounded-2xl rounded-bl-none shadow-xs flex items-center gap-2 text-slate-500 text-xs font-semibold">
                     <span className="flex gap-1 items-center">
-                      <span className="w-2 h-2 rounded-full bg-blue-600 animate-bounce"></span>
-                      <span className="w-2 h-2 rounded-full bg-blue-600 animate-bounce [animation-delay:0.2s]"></span>
-                      <span className="w-2 h-2 rounded-full bg-blue-600 animate-bounce [animation-delay:0.4s]"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:0.15s]"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:0.3s]"></span>
                     </span>
-                    <span>Analyzing live catalog &amp; hardware specs...</span>
+                    <span>Checking hardware specs...</span>
                   </div>
                 </div>
               )}
