@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import Navbar from '@/components/Navbar';
+import AIAssistantWidget from '@/components/AIAssistantWidget';
 
 export const metadata: Metadata = {
   title: 'S SQUARE ELECTRONICS | PCB Component Hub',
@@ -41,6 +42,9 @@ export default function RootLayout({
           </p>
           <p>&copy; {new Date().getFullYear()} S SQUARE ELECTRONICS — PCB Component Hub. Built for Electronic Engineers.</p>
         </footer>
+
+        {/* Global Floating AI Hardware Assistant */}
+        <AIAssistantWidget />
       </body>
     </html>
   );
