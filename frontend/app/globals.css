@@ -3,66 +3,18 @@
 @tailwind utilities;
 
 :root {
-  --bg-page: #f6f5f1;
-  --bg-surface: #ffffff;
-  --bg-raised: #eeede8;
-  --bg-vellum: #fbfaf7;
-  --bg-chassis: #151514;
-  --ink-primary: #161513;
-  --ink-secondary: #52504a;
-  --ink-muted: #76736c;
-  --accent-copper: #9a6320;
-  --accent-copper-bright: #c89452;
-  --accent-solder: #167c4c;
-  --hairline: rgba(22, 21, 19, 0.1);
-}
-
-html {
-  background-color: var(--bg-page);
-  color: var(--ink-primary);
+  --background: #f8fafc;
+  --foreground: #0f172a;
 }
 
 body {
-  color: var(--ink-primary);
-  background-color: var(--bg-page);
-  font-family: var(--font-ibm-plex), system-ui, -apple-system, sans-serif;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Precision CAD drafting grid utility */
-.bg-cad-grid {
-  background-image: radial-gradient(rgba(22, 21, 19, 0.085) 1px, transparent 1px);
+/* Faint dot pattern utility */
+.bg-dot-pattern {
+  background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
   background-size: 24px 24px;
-}
-
-.bg-vellum-grid {
-  background-color: var(--bg-vellum);
-  background-image: radial-gradient(rgba(22, 21, 19, 0.14) 1px, transparent 1px);
-  background-size: 16px 16px;
-}
-
-.bg-soldermask-grid {
-  background-color: var(--bg-chassis);
-  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
-  background-size: 16px 16px;
-}
-
-/* Accessible focus ring matching palette */
-:where(a, button, input, textarea, select):focus-visible {
-  outline: 2px solid var(--accent-copper);
-  outline-offset: 2px;
-}
-
-/* Tabular figures helper */
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
-}
-
-/* Hide scrollbars cleanly where used in compact chip strips */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }

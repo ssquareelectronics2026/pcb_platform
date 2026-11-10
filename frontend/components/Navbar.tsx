@@ -3,7 +3,6 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowUpRight, Menu, X } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -24,84 +23,93 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="border-b border-[#161513]/10 bg-[#f6f5f1]/95 backdrop-blur-sm sticky top-0 z-50">
+    <motion.nav 
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      className="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-50 shadow-sm"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16 gap-4">
+        <div className="flex justify-between items-center h-20 gap-4">
+          
           {/* Brand Text Title (Clean Font, Logo Image Completely Removed) */}
-          <Link
-            href="/"
-            className="flex items-center flex-shrink-0 mr-2 sm:mr-6 focus-visible:outline-none rounded-md"
-          >
-            <span className="text-[15px] sm:text-base font-semibold tracking-tight text-[#161513] leading-none hover:text-[#9a6320] transition-colors duration-150 ease-unslop whitespace-nowrap">
+          <Link href="/" className="flex items-center group flex-shrink-0 mr-2 sm:mr-6">
+            <span className="text-base sm:text-lg md:text-xl font-black tracking-tight text-slate-900 leading-none group-hover:text-blue-600 transition-colors whitespace-nowrap">
               S SQUARE ELECTRONICS
             </span>
           </Link>
 
-          {/* Desktop Navigation Tabs with Clean Spacing */}
-          <div className="hidden lg:flex items-center gap-1 flex-shrink-0">
+          {/* Desktop Navigation Tabs with Generous Spacing */}
+          <div className="hidden lg:flex items-center gap-1 xl:gap-1.5 flex-shrink-0">
             {navItems.map((item) => {
               const active = isLinkActive(item.href, item.exact);
               return (
-                <Link
+                <motion.div
                   key={item.name}
-                  href={item.href}
-                  className={`h-9 px-2.5 xl:px-3 rounded-lg text-[13px] xl:text-sm font-medium inline-flex items-center gap-1.5 transition-colors duration-150 ease-unslop whitespace-nowrap border ${
-                    active
-                      ? 'bg-white text-[#161513] border-[#161513]/12 shadow-[0_1px_2px_rgba(22,21,19,0.04)]'
-                      : 'text-[#52504a] border-transparent hover:text-[#161513] hover:bg-[#161513]/[0.04]'
-                  }`}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                 >
-                  {active && (
-                    <span
-                      aria-hidden="true"
-                      className="w-1.5 h-1.5 rounded-full bg-[#9a6320] flex-shrink-0"
-                    />
-                  )}
-                  <span>{item.name}</span>
-                </Link>
+                  <Link
+                    href={item.href}
+                    className={`px-2.5 xl:px-3.5 py-2 rounded-xl text-xs xl:text-sm font-bold transition-all inline-block whitespace-nowrap ${
+                      active
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                </motion.div>
               );
             })}
 
-            {/* External Download KiCAD Link */}
-            <a
+            {/* External Download KiCAD link */}
+            <motion.a
+              whileHover={{ scale: 1.04, y: -1 }}
+              whileTap={{ scale: 0.96 }}
               href="https://www.kicad.org/download/"
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-2 h-9 px-3.5 rounded-lg text-[13px] xl:text-sm font-medium bg-[#161513] hover:bg-[#2a2824] text-white inline-flex items-center gap-1.5 transition-colors duration-150 ease-unslop whitespace-nowrap flex-shrink-0 active:scale-[0.98]"
+              className="ml-1 xl:ml-2 inline-flex items-center gap-1 px-3 xl:px-3.5 py-2 rounded-xl text-xs xl:text-sm font-bold bg-slate-900 hover:bg-blue-600 text-white shadow-sm transition-all shadow-slate-900/10 hover:shadow-blue-600/20 whitespace-nowrap flex-shrink-0"
             >
               <span>Download KiCAD</span>
-              <ArrowUpRight className="w-4 h-4" strokeWidth={1.5} />
-            </a>
+              <span className="text-xs">↗</span>
+            </motion.a>
           </div>
 
           {/* Mobile Hamburger Button */}
           <div className="flex lg:hidden items-center">
-            <button
+            <motion.button
+              whileTap={{ scale: 0.92 }}
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="w-9 h-9 rounded-lg text-[#161513] hover:bg-[#161513]/[0.06] inline-flex items-center justify-center transition-colors duration-150 ease-unslop"
+              className="p-2.5 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors"
               aria-label="Toggle navigation menu"
-              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? (
-                <X className="w-5 h-5" strokeWidth={1.5} />
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               ) : (
-                <Menu className="w-5 h-5" strokeWidth={1.5} />
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
               )}
-            </button>
+            </motion.button>
           </div>
+
         </div>
       </div>
 
-      {/* Mobile Dropdown Menu */}
+      {/* Mobile Dropdown Menu with AnimatePresence */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className="lg:hidden border-t border-[#161513]/10 bg-white px-4 py-4 space-y-1 shadow-[0_8px_24px_rgba(22,21,19,0.06)]"
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-1.5 shadow-xl overflow-hidden"
           >
             {navItems.map((item) => {
               const active = isLinkActive(item.href, item.exact);
@@ -110,33 +118,32 @@ export default function Navbar() {
                   key={item.name}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center justify-between h-10 px-3 rounded-lg text-sm font-medium transition-colors duration-150 ease-unslop border ${
+                  className={`block px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
                     active
-                      ? 'bg-[#eeede8] text-[#161513] border-[#161513]/12'
-                      : 'text-[#52504a] border-transparent hover:bg-[#f6f5f1] hover:text-[#161513]'
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                      : 'text-slate-700 hover:bg-slate-100'
                   }`}
                 >
-                  <span>{item.name}</span>
-                  {active && <span className="w-1.5 h-1.5 rounded-full bg-[#9a6320]" />}
+                  {item.name}
                 </Link>
               );
             })}
 
-            <div className="pt-2 mt-2 border-t border-[#161513]/10">
+            <div className="pt-2">
               <a
                 href="https://www.kicad.org/download/"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between w-full h-10 px-3 rounded-lg text-sm font-medium bg-[#161513] hover:bg-[#2a2824] text-white transition-colors duration-150 ease-unslop"
+                className="flex items-center justify-between w-full px-4 py-3 rounded-xl text-sm font-bold bg-slate-900 text-white hover:bg-blue-600 transition-all shadow-md shadow-slate-900/10"
               >
                 <span>Download KiCAD</span>
-                <ArrowUpRight className="w-4 h-4" strokeWidth={1.5} />
+                <span>↗</span>
               </a>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </motion.nav>
   );
 }

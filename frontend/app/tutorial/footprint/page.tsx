@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import TutorialStepCard from '@/components/TutorialStepCard';
-import { ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 export const metadata = {
   title: 'KiCAD Footprint Tutorial | PCB Component Hub',
@@ -101,70 +100,66 @@ export default function FootprintTutorialPage() {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto py-4 sm:py-6 space-y-8">
+    <div className="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-500">
       {/* Navigation breadcrumb */}
-      <div className="flex items-center justify-between border-b border-[#161513]/10 pb-4">
-        <Link
-          href="/tutorial/symbol"
-          className="text-[#9a6320] hover:text-[#7a4c14] font-medium text-sm inline-flex items-center gap-1.5 transition-colors duration-150 ease-unslop"
+      <div className="mb-6 flex items-center justify-between">
+        <Link 
+          href="/tutorial/symbol" 
+          className="text-blue-600 hover:text-blue-800 font-semibold text-sm inline-flex items-center gap-1.5 transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
-          <span>Symbol Tutorial</span>
+          &larr; Symbol Tutorial
         </Link>
         <Link
           href="/components"
-          className="text-[#52504a] hover:text-[#161513] font-medium text-sm inline-flex items-center gap-1.5 transition-colors duration-150 ease-unslop"
+          className="text-slate-500 hover:text-slate-800 font-semibold text-sm inline-flex items-center gap-1 transition-colors"
         >
-          <span>Back to components</span>
-          <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+          Back to Components &rarr;
         </Link>
       </div>
 
       {/* Page Header */}
-      <div className="bg-white border border-[#161513]/10 rounded-2xl p-6 sm:p-8 space-y-3">
-        <p className="font-mono text-xs text-[#167c4c] tabular-nums">
-          KiCAD documentation · Footprint guide
-        </p>
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-medium text-[#161513] tracking-tight leading-snug">
+      <div className="bg-white/80 border border-slate-200/90 backdrop-blur-sm rounded-3xl p-8 md:p-10 shadow-sm mb-10 text-center">
+        <span className="inline-block text-xs uppercase font-extrabold tracking-widest text-blue-600 bg-blue-50 border border-blue-100 rounded-full px-4 py-1.5 mb-4">
+          KiCAD Documentation
+        </span>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight uppercase">
           DOCUMENTATION TUTORIAL FOR ADDING THE SYMBOL AND FOOTPRINT IN KiCAD SOFTWARE
         </h1>
-        <h2 className="text-base sm:text-lg font-medium text-[#52504a] pt-3 border-t border-[#161513]/8">
+        <h2 className="text-lg sm:text-xl font-bold text-slate-600 mt-4 border-t border-slate-100 pt-4">
           How to add Footprint in the KiCAD software?
         </h2>
       </div>
 
-      {/* Tutorial Steps */}
-      <div className="space-y-4">
+      {/* Tutorial Steps with Motion */}
+      <div className="space-y-8">
         {steps.map((item, index) => (
           <TutorialStepCard key={item.stepNumber} item={item} index={index} />
         ))}
       </div>
 
-      {/* Closing Completion Banner */}
-      <div className="bg-[#151514] text-white rounded-2xl border border-white/10 p-6 sm:p-8 flex items-center gap-4">
-        <div className="w-10 h-10 rounded-lg bg-[#1f1e1c] border border-white/10 text-[#4cc38a] flex items-center justify-center flex-shrink-0">
-          <CheckCircle2 className="w-5 h-5" strokeWidth={1.5} />
+      {/* Closing Message Banner */}
+      <div className="my-10 bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-600 text-white rounded-3xl p-8 sm:p-10 text-center shadow-xl shadow-blue-900/10 relative overflow-hidden">
+        <div className="relative z-10">
+          <span className="text-3xl block mb-2">🎉</span>
+          <h3 className="text-xl sm:text-2xl font-black tracking-tight">
+            Enjoy your PCB works and have a great success ahead!!!
+          </h3>
         </div>
-        <h3 className="text-base sm:text-lg font-medium tracking-tight text-white">
-          Enjoy your PCB works and have a great success ahead
-        </h3>
       </div>
 
       {/* Bottom Navigation */}
-      <div className="pt-6 border-t border-[#161513]/10 flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href="/tutorial/symbol"
-          className="inline-flex items-center gap-2 h-10 px-4 bg-white hover:bg-[#eeede8] border border-[#161513]/12 text-[#161513] font-medium rounded-lg transition-colors duration-150 ease-unslop text-sm active:scale-[0.98]"
+      <div className="mt-12 text-center pt-8 border-t border-slate-200 flex flex-wrap items-center justify-center gap-4">
+        <Link 
+          href="/tutorial/symbol" 
+          className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-700 hover:text-blue-600 font-bold rounded-xl shadow-sm hover:shadow transition-all text-sm active:scale-95"
         >
-          <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
-          <span>View Symbol Tutorial</span>
+          &larr; View Symbol Tutorial
         </Link>
-        <Link
-          href="/components"
-          className="inline-flex items-center gap-2 h-10 px-4 bg-[#161513] hover:bg-[#2a2824] text-white font-medium rounded-lg transition-colors duration-150 ease-unslop text-sm active:scale-[0.98]"
+        <Link 
+          href="/components" 
+          className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 transition-all text-sm active:scale-95"
         >
-          <span>Back to component library</span>
-          <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+          Back to Component Library &rarr;
         </Link>
       </div>
     </div>

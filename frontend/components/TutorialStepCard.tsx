@@ -1,7 +1,6 @@
 'use client';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
 
 interface TutorialStepProps {
   item: {
@@ -15,81 +14,57 @@ interface TutorialStepProps {
   index: number;
 }
 
-function formatTutorialText(text: string) {
-  const tokenRegex = /(<component_name>(?:\.(?:kicad_sym|kicad_mod|pretty))?|Ctrl \+ S)/g;
-  const parts = text.split(tokenRegex);
-
-  return parts.map((part, idx) => {
-    if (/^<component_name>/.test(part)) {
-      return (
-        <code
-          key={idx}
-          className="font-mono text-[13px] px-1.5 py-0.5 bg-[#eeede8] text-[#9a6320] border border-[#161513]/10 rounded mx-0.5"
-        >
-          {part}
-        </code>
-      );
-    }
-    if (part === 'Ctrl + S') {
-      return (
-        <kbd
-          key={idx}
-          className="font-mono text-xs px-1.5 py-0.5 bg-[#f6f5f1] text-[#161513] border border-[#161513]/20 rounded shadow-[0_1px_0_rgba(22,21,19,0.12)] mx-0.5"
-        >
-          {part}
-        </kbd>
-      );
-    }
-    return <span key={idx}>{part}</span>;
-  });
-}
-
 export default function TutorialStepCard({ item, index }: TutorialStepProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{
-        duration: 0.32,
-        delay: Math.min(index * 0.04, 0.24),
-        ease: [0.22, 1, 0.36, 1],
-      }}
-      className="bg-white border border-[#161513]/10 rounded-xl p-6 sm:p-7"
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{ duration: 0.5, delay: Math.min(index * 0.05, 0.3), ease: 'easeOut' }}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-sm hover:shadow-xl hover:shadow-slate-200/60 transition-shadow duration-300"
     >
       <div className="flex items-start gap-4">
-        <span className="flex-shrink-0 w-9 h-9 rounded-lg bg-[#161513] text-white font-mono tabular-nums text-xs font-medium flex items-center justify-center">
-          {String(item.stepNumber).padStart(2, '0')}
-        </span>
-
-        <div className="flex-1 pt-0.5 min-w-0">
-          <p className="text-sm sm:text-base text-[#52504a] leading-relaxed font-normal">
-            <span className="font-medium text-[#161513]">{item.title}: </span>
-            {formatTutorialText(item.text)}
+        <motion.span 
+          whileHover={{ scale: 1.1, rotate: 4 }}
+          className="flex-shrink-0 w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-black text-base flex items-center justify-center shadow-md shadow-blue-600/25 cursor-default"
+        >
+          {item.stepNumber}
+        </motion.span>
+        <div className="flex-1 pt-1.5">
+          <p className="text-base sm:text-lg text-slate-800 font-semibold leading-relaxed">
+            <span className="font-bold text-slate-900">{item.title}: </span>
+            {item.text}
           </p>
 
           {/* Display step image if present */}
           {item.image && (
-            <div className="mt-4 rounded-lg border border-[#161513]/10 overflow-hidden bg-[#f6f5f1]">
+            <motion.div 
+              whileHover={{ scale: 1.01 }}
+              transition={{ duration: 0.3 }}
+              className="mt-5 rounded-2xl border border-slate-200/90 overflow-hidden bg-slate-50 shadow-inner group"
+            >
               <img
                 src={item.image}
                 alt={item.alt || item.title}
-                className="w-full h-auto object-contain max-h-[540px] mx-auto block"
+                className="w-full h-auto object-contain max-h-[540px] mx-auto block group-hover:scale-[1.015] transition-transform duration-500 ease-out"
                 loading="lazy"
               />
-            </div>
+            </motion.div>
           )}
 
           {/* Prominent Link to Footprint Tutorial right below Step 9 */}
           {item.hasFootprintLink && (
-            <div className="mt-5 pt-4 border-t border-[#161513]/8">
-              <Link
-                href="/tutorial/footprint"
-                className="inline-flex items-center gap-2 h-10 px-4 bg-[#161513] hover:bg-[#2a2824] text-white font-medium rounded-lg text-sm transition-colors duration-150 ease-unslop active:scale-[0.98]"
-              >
-                <span>Footprint Tutorial</span>
-                <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
-              </Link>
+            <div className="mt-6 pt-4 border-t border-slate-100">
+              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="inline-block">
+                <Link
+                  href="/tutorial/footprint"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 transition-all text-base"
+                >
+                  <span>Footprint Tutorial</span>
+                  <span aria-hidden="true">&rarr;</span>
+                </Link>
+              </motion.div>
             </div>
           )}
         </div>

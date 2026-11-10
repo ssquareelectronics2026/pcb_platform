@@ -2,19 +2,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import {
-  ArrowRight,
-  ArrowUp,
-  ArrowUpRight,
-  Compass,
-  Cpu,
-  HelpCircle,
-  Layers,
-  Loader2,
-  Search,
-  Trash2,
-  X,
-} from 'lucide-react';
 
 interface MatchedComponent {
   id: number | string;
@@ -32,36 +19,19 @@ interface Message {
 }
 
 const STARTER_PROMPTS = [
-  {
-    label: 'What components are in the catalog?',
-    icon: Search,
-  },
-  {
-    label: 'How to import .kicad_sym into KiCAD?',
-    icon: Compass,
-  },
-  {
-    label: 'How to add footprint .kicad_mod?',
-    icon: Layers,
-  },
-  {
-    label: 'Request a custom PCB design',
-    icon: Cpu,
-  },
-  {
-    label: 'How to request a missing component?',
-    icon: HelpCircle,
-  },
+  '🔍 What components are in the catalog?',
+  '📐 How to import .kicad_sym into KiCAD?',
+  '👣 How to add footprint .kicad_mod?',
+  '⚡ Request a custom PCB design',
+  '❓ How to request a missing component?',
 ];
-
-const WELCOME_TEXT =
-  'I am the **S SQUARE ELECTRONICS AI Assistant**. Ask me about components in our catalog, KiCAD `.kicad_sym` / `.kicad_mod` imports, or custom PCB design.';
 
 /**
  * Parses markdown-style links [Text](url), bold **text**, and inline code `code`,
- * while stripping raw markdown headers or blockquotes.
+ * while cleanly stripping raw symbols like ### or >.
  */
 function FormattedMessageContent({ content }: { content: string }) {
+  // Pre-clean content to eliminate raw markdown headers (###, ##, #) and blockquotes (>)
   const cleaned = content
     .replace(/^#{1,6}\s+/gm, '')
     .replace(/^>\s*/gm, '')
@@ -75,14 +45,10 @@ function FormattedMessageContent({ content }: { content: string }) {
         const trimmed = line.trim();
         if (!trimmed) return <div key={lineIdx} className="h-1" />;
 
-        const isBullet =
-          trimmed.startsWith('- ') ||
-          trimmed.startsWith('* ') ||
-          /^\d+\.\s/.test(trimmed);
-        const cleanLine = isBullet
-          ? trimmed.replace(/^[-*]\s+|\d+\.\s+/, '')
-          : trimmed;
+        const isBullet = trimmed.startsWith('- ') || trimmed.startsWith('* ') || /^\d+\.\s/.test(trimmed);
+        const cleanLine = isBullet ? trimmed.replace(/^[-*]\s+|\d+\.\s+/, '') : trimmed;
 
+        // Parse line into tokens of [link], **bold**, `code`, or text
         const tokenRegex = /(\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*|`[^`]+`)/g;
         const parts = cleanLine.split(tokenRegex);
 
@@ -99,10 +65,10 @@ function FormattedMessageContent({ content }: { content: string }) {
                 <Link
                   key={pIdx}
                   href={href}
-                  className="inline-flex items-center gap-0.5 text-[#9a6320] hover:text-[#7a4c14] font-medium underline underline-offset-2 bg-[#eeede8] hover:bg-[#e4e2dc] px-1.5 py-0.5 rounded transition-colors duration-150"
+                  className="inline-flex items-center gap-0.5 text-blue-600 hover:text-blue-800 font-bold underline bg-blue-50/80 hover:bg-blue-100 px-1.5 py-0.5 rounded transition-colors"
                 >
                   <span>{title}</span>
-                  <ArrowUpRight className="w-3 h-3" strokeWidth={1.5} />
+                  <span className="text-[10px] no-underline">↗</span>
                 </Link>
               );
             }
@@ -112,10 +78,10 @@ function FormattedMessageContent({ content }: { content: string }) {
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-0.5 text-[#9a6320] hover:text-[#7a4c14] font-medium underline underline-offset-2 bg-[#eeede8] hover:bg-[#e4e2dc] px-1.5 py-0.5 rounded transition-colors duration-150"
+                className="inline-flex items-center gap-0.5 text-blue-600 hover:text-blue-800 font-bold underline bg-blue-50/80 hover:bg-blue-100 px-1.5 py-0.5 rounded transition-colors"
               >
                 <span>{title}</span>
-                <ArrowUpRight className="w-3 h-3" strokeWidth={1.5} />
+                <span className="text-[10px] no-underline">↗</span>
               </a>
             );
           }
@@ -124,7 +90,7 @@ function FormattedMessageContent({ content }: { content: string }) {
           const boldMatch = part.match(/^\*\*([^*]+)\*\*$/);
           if (boldMatch) {
             return (
-              <strong key={pIdx} className="font-semibold text-[#161513]">
+              <strong key={pIdx} className="font-extrabold text-slate-900">
                 {boldMatch[1]}
               </strong>
             );
@@ -134,10 +100,7 @@ function FormattedMessageContent({ content }: { content: string }) {
           const codeMatch = part.match(/^`([^`]+)`$/);
           if (codeMatch) {
             return (
-              <code
-                key={pIdx}
-                className="px-1.5 py-0.5 bg-[#eeede8] text-[#9a6320] font-mono text-xs rounded border border-[#161513]/10"
-              >
+              <code key={pIdx} className="px-1.5 py-0.5 bg-slate-100 text-blue-700 font-mono text-xs rounded border border-slate-200">
                 {codeMatch[1]}
               </code>
             );
@@ -148,11 +111,8 @@ function FormattedMessageContent({ content }: { content: string }) {
 
         if (isBullet) {
           return (
-            <div key={lineIdx} className="flex items-start gap-2 pl-1">
-              <span
-                className="w-1 h-1 rounded-full bg-[#9a6320] mt-2 flex-shrink-0"
-                aria-hidden="true"
-              />
+            <div key={lineIdx} className="flex items-start gap-1.5 pl-1">
+              <span className="text-blue-500 font-bold mt-0.5 flex-shrink-0">•</span>
               <span className="flex-1">{renderedLine}</span>
             </div>
           );
@@ -170,14 +130,16 @@ export default function AIAssistantWidget() {
     {
       id: 'welcome',
       role: 'assistant',
-      content: WELCOME_TEXT,
-      timestamp: 'Now',
+      content:
+        'Hello! 👋 I am the **S SQUARE ELECTRONICS AI Assistant**. Ask me about components in our catalog, KiCAD `.kicad_sym` / `.kicad_mod` imports, or custom PCB design!',
+      timestamp: 'Just now',
     },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Auto-scroll to bottom of chat
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -196,10 +158,7 @@ export default function AIAssistantWidget() {
       id: Date.now().toString(),
       role: 'user',
       content: query,
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
     const newMessages = [...messages, userMessage];
@@ -232,10 +191,7 @@ export default function AIAssistantWidget() {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: replyText,
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         matchedComponents: data.matchedComponents,
       };
 
@@ -246,11 +202,8 @@ export default function AIAssistantWidget() {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content:
-          'Unable to reach the assistant right now. You can browse our [Components Catalog](/components) or try again.',
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+          'I ran into a temporary connection issue. Please explore our [Components Catalog](/components) or try asking again.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
@@ -263,169 +216,163 @@ export default function AIAssistantWidget() {
       {
         id: 'welcome',
         role: 'assistant',
-        content: WELCOME_TEXT,
-        timestamp: 'Now',
+        content:
+          'Hello! 👋 I am the **S SQUARE ELECTRONICS AI Assistant**. Ask me about components in our catalog, KiCAD `.kicad_sym` / `.kicad_mod` imports, or custom PCB design!',
+        timestamp: 'Just now',
       },
     ]);
   };
 
   return (
     <>
-      {/* Launcher Button */}
+      {/* Floating Launcher Button */}
       <div className="fixed bottom-6 right-6 z-50">
         <AnimatePresence>
           {!isOpen && (
             <motion.button
               type="button"
               onClick={() => setIsOpen(true)}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-              className="flex items-center gap-3 px-4 h-12 bg-[#151514] hover:bg-[#242320] text-white rounded-xl border border-white/15 shadow-[0_8px_24px_rgba(22,21,19,0.2)] transition-colors duration-150 ease-unslop active:scale-[0.98]"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="relative flex items-center gap-2.5 px-4 sm:px-5 py-3.5 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-900 text-white rounded-full shadow-2xl shadow-blue-950/40 border border-blue-400/30 group transition-all"
               aria-label="Open S SQUARE AI Assistant"
             >
-              <div className="w-7 h-7 rounded-md bg-[#1f1e1c] border border-white/10 text-[#c89452] flex items-center justify-center flex-shrink-0">
-                <Cpu className="w-4 h-4" strokeWidth={1.5} />
-              </div>
+              {/* Pulsing indicator beacon */}
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+
+              <span className="text-xl">⚡</span>
 
               <div className="text-left hidden sm:block">
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className="w-1.5 h-1.5 rounded-full bg-[#4cc38a]"
-                    aria-hidden="true"
-                  />
-                  <p className="text-xs font-medium text-white leading-none">
-                    S SQUARE AI Assistant
-                  </p>
-                </div>
-                <p className="font-mono text-[10px] text-[#a6a39c] leading-tight mt-0.5">
+                <p className="text-xs font-black tracking-wide leading-none uppercase text-blue-200">
+                  S SQUARE AI Assistant
+                </p>
+                <p className="text-[10px] text-slate-300 font-medium leading-tight mt-0.5">
                   Instant Hardware Support
                 </p>
               </div>
 
-              <span className="text-xs font-medium sm:hidden">AI Assistant</span>
+              <span className="text-xs font-bold sm:hidden">AI Assistant</span>
             </motion.button>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Chat Instrument Panel */}
+      {/* Floating Chat Modal Panel */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 12 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[94vw] sm:w-[420px] h-[580px] max-h-[85vh] bg-white rounded-2xl shadow-[0_12px_36px_rgba(22,21,19,0.16)] border border-[#161513]/14 flex flex-col overflow-hidden"
+            initial={{ opacity: 0, scale: 0.9, y: 30 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 30 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[95vw] sm:w-[420px] h-[580px] max-h-[85vh] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden"
           >
-            {/* Header */}
-            <div className="bg-[#151514] px-4 py-3.5 text-white flex items-center justify-between border-b border-white/10">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-lg bg-[#1f1e1c] border border-white/10 flex items-center justify-center text-[#c89452] flex-shrink-0">
-                  <Cpu className="w-[18px] h-[18px]" strokeWidth={1.5} />
+            {/* Header: S SQUARE AI Assistant & S SQUARE ELECTRONICS • Instant Hardware Support */}
+            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 p-4 text-white flex items-center justify-between border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-xl shadow-md border border-white/20">
+                  ⚡
                 </div>
-                <div className="min-w-0">
+                <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="font-medium text-sm text-white tracking-tight truncate">
+                    <h3 className="font-black text-sm text-white tracking-tight">
                       S SQUARE AI Assistant
                     </h3>
-                    <span className="inline-flex items-center gap-1 font-mono text-[10px] text-[#4cc38a] bg-[#1f1e1c] border border-white/10 px-1.5 py-0.5 rounded">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#4cc38a]" />
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/70 border border-emerald-500/30 px-1.5 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                       Online
                     </span>
                   </div>
-                  <p className="text-[11px] text-[#a6a39c] truncate">
+                  <p className="text-[11px] text-slate-300 font-medium">
                     S SQUARE ELECTRONICS • Instant Hardware Support
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1 flex-shrink-0">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={handleClearChat}
                   title="Clear conversation"
-                  aria-label="Clear conversation"
-                  className="w-8 h-8 rounded-lg text-[#a6a39c] hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors duration-150"
+                  className="w-8 h-8 rounded-full text-slate-400 hover:text-white hover:bg-white/10 flex items-center justify-center text-sm transition-colors"
                 >
-                  <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+                  🗑️
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
                   title="Close chat"
-                  aria-label="Close chat"
-                  className="w-8 h-8 rounded-lg text-[#a6a39c] hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors duration-150"
+                  className="w-8 h-8 rounded-full text-slate-400 hover:text-white hover:bg-white/10 flex items-center justify-center text-lg font-bold transition-colors"
                 >
-                  <X className="w-4 h-4" strokeWidth={1.5} />
+                  &times;
                 </button>
               </div>
             </div>
 
             {/* Chat Messages Body */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#f6f5f1]">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-slate-50/60">
               {messages.map((msg) => {
                 const isUser = msg.role === 'user';
 
                 return (
                   <div
                     key={msg.id}
-                    className={`flex flex-col ${
-                      isUser ? 'items-end ml-auto' : 'items-start mr-auto'
-                    } max-w-[92%]`}
+                    className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[92%] ${
+                      isUser ? 'ml-auto' : 'mr-auto'
+                    }`}
                   >
                     <div
-                      className={`p-3.5 rounded-xl ${
+                      className={`p-3.5 rounded-2xl shadow-xs text-slate-800 ${
                         isUser
-                          ? 'bg-[#161513] text-white rounded-br-sm'
-                          : 'bg-white border border-[#161513]/10 text-[#161513] rounded-bl-sm'
+                          ? 'bg-blue-600 text-white rounded-br-none shadow-blue-500/10'
+                          : 'bg-white border border-slate-200/90 rounded-bl-none shadow-slate-200/40'
                       }`}
                     >
                       {isUser ? (
-                        <p className="text-xs sm:text-sm font-normal whitespace-pre-wrap">
-                          {msg.content}
-                        </p>
+                        <p className="text-xs sm:text-sm font-medium whitespace-pre-wrap">{msg.content}</p>
                       ) : (
                         <div>
                           <FormattedMessageContent content={msg.content} />
 
                           {/* Interactive Component Cards */}
                           {msg.matchedComponents && msg.matchedComponents.length > 0 && (
-                            <div className="mt-3 pt-2.5 border-t border-[#161513]/8 space-y-2">
-                              <div className="flex items-center justify-between font-mono text-[11px] text-[#76736c] tabular-nums">
-                                <span>
-                                  Verified catalog parts ({msg.matchedComponents.length})
-                                </span>
+                            <div className="mt-3 pt-2.5 border-t border-slate-100 space-y-2">
+                              <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                <span>Verified Catalog Parts ({msg.matchedComponents.length}):</span>
                               </div>
                               <div className="space-y-1.5">
                                 {msg.matchedComponents.map((comp) => (
                                   <div
                                     key={comp.id}
-                                    className="bg-[#f6f5f1] hover:bg-[#eeede8] border border-[#161513]/10 rounded-lg p-2.5 transition-colors duration-150 flex items-center justify-between gap-2.5"
+                                    className="bg-slate-50 hover:bg-blue-50/50 border border-slate-200/90 hover:border-blue-300 rounded-xl p-2.5 transition-all flex items-center justify-between gap-2.5 group"
                                   >
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className="font-mono font-medium text-[#161513] text-xs truncate">
+                                        <span className="font-bold text-slate-900 text-xs truncate group-hover:text-blue-600 transition-colors">
                                           {comp.name}
                                         </span>
-                                        <span className="font-mono tabular-nums bg-white text-[#9a6320] text-[10px] font-medium px-1.5 py-0.5 rounded border border-[#161513]/10">
+                                        <span className="bg-blue-100 text-blue-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-blue-200">
                                           ID #{comp.id}
                                         </span>
                                       </div>
                                       {comp.description && (
-                                        <p className="text-[11px] text-[#52504a] truncate mt-0.5">
+                                        <p className="text-[10px] text-slate-500 truncate mt-0.5 font-normal">
                                           {comp.description}
                                         </p>
                                       )}
                                     </div>
                                     <Link
                                       href={`/components/${comp.id}`}
-                                      className="flex-shrink-0 inline-flex items-center gap-1 h-7 px-2.5 bg-[#161513] hover:bg-[#9a6320] text-white text-[11px] font-medium rounded-md transition-colors duration-150"
+                                      className="flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-[11px] font-bold rounded-lg transition-all shadow-xs"
                                     >
                                       <span>Open Component</span>
-                                      <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
+                                      <span>&rarr;</span>
                                     </Link>
                                   </div>
                                 ))}
@@ -435,22 +382,23 @@ export default function AIAssistantWidget() {
                         </div>
                       )}
                     </div>
-                    <span className="font-mono text-[10px] text-[#76736c] px-1 mt-1 tabular-nums">
-                      {isUser ? 'You' : 'S SQUARE AI'} · {msg.timestamp}
+                    <span className="text-[10px] text-slate-400 px-1 mt-1 font-semibold">
+                      {isUser ? 'You' : 'S SQUARE AI'} • {msg.timestamp}
                     </span>
                   </div>
                 );
               })}
 
-              {/* Loading Indicator */}
+              {/* Fast Typing indicator */}
               {loading && (
                 <div className="flex flex-col items-start max-w-[85%] mr-auto">
-                  <div className="px-3 py-2.5 bg-white border border-[#161513]/10 rounded-xl rounded-bl-sm flex items-center gap-2 text-[#52504a] text-xs font-mono">
-                    <Loader2
-                      className="w-3.5 h-3.5 text-[#9a6320] animate-spin"
-                      strokeWidth={1.5}
-                    />
-                    <span>Checking catalog</span>
+                  <div className="p-3 bg-white border border-slate-200 rounded-2xl rounded-bl-none shadow-xs flex items-center gap-2 text-slate-500 text-xs font-semibold">
+                    <span className="flex gap-1 items-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:0.15s]"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:0.3s]"></span>
+                    </span>
+                    <span>Checking hardware specs...</span>
                   </div>
                 </div>
               )}
@@ -458,36 +406,29 @@ export default function AIAssistantWidget() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Starter Prompts Strip */}
+            {/* Starter Chips (Only show if only 1 welcome message present) */}
             {messages.length === 1 && (
-              <div className="px-3 py-2.5 bg-white border-t border-[#161513]/10 overflow-x-auto no-scrollbar">
-                <p className="font-mono text-[11px] text-[#76736c] mb-1.5 px-0.5">
-                  Quick questions
+              <div className="px-3 py-2 bg-slate-100/90 border-t border-slate-200/70 overflow-x-auto no-scrollbar">
+                <p className="text-[10px] uppercase font-bold text-slate-400 mb-1.5 px-1 tracking-wider">
+                  Quick Questions:
                 </p>
-                <div className="flex gap-1.5 flex-nowrap pb-0.5 pr-4">
-                  {STARTER_PROMPTS.map((item, i) => {
-                    const IconComponent = item.icon;
-                    return (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => handleSend(item.label)}
-                        className="h-8 px-2.5 bg-[#f6f5f1] hover:bg-[#eeede8] border border-[#161513]/10 rounded-lg text-[11px] font-medium text-[#161513] whitespace-nowrap inline-flex items-center gap-1.5 transition-colors duration-150 flex-shrink-0"
-                      >
-                        <IconComponent
-                          className="w-3.5 h-3.5 text-[#76736c]"
-                          strokeWidth={1.5}
-                        />
-                        <span>{item.label}</span>
-                      </button>
-                    );
-                  })}
+                <div className="flex gap-1.5 flex-nowrap pb-1">
+                  {STARTER_PROMPTS.map((prompt, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => handleSend(prompt)}
+                      className="px-2.5 py-1.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl text-[11px] font-bold text-slate-700 hover:text-blue-700 whitespace-nowrap shadow-2xs transition-all flex-shrink-0"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
 
             {/* Input Bar */}
-            <div className="p-3 bg-white border-t border-[#161513]/10">
+            <div className="p-3 bg-white border-t border-slate-200">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -499,17 +440,17 @@ export default function AIAssistantWidget() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask about components, KiCAD, or PCB design"
+                  placeholder="Ask about components, KiCAD, or PCB design..."
                   disabled={loading}
-                  className="flex-1 h-10 bg-[#f6f5f1] border border-[#161513]/12 rounded-lg px-3 text-xs sm:text-sm text-[#161513] placeholder-[#76736c] focus:outline-none focus:border-[#9a6320] focus:bg-white transition-colors duration-150 disabled:opacity-60"
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium disabled:opacity-60"
                 />
                 <button
                   type="submit"
                   disabled={!input.trim() || loading}
-                  className="w-10 h-10 rounded-lg bg-[#161513] hover:bg-[#2a2824] text-white flex items-center justify-center transition-colors duration-150 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none flex-shrink-0"
+                  className="w-10 h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center text-sm font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
                   aria-label="Send message"
                 >
-                  <ArrowUp className="w-4 h-4" strokeWidth={1.5} />
+                  ➤
                 </button>
               </form>
             </div>

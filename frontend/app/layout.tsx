@@ -1,22 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { IBM_Plex_Sans, JetBrains_Mono } from 'next/font/google';
 import Navbar from '@/components/Navbar';
 import AIAssistantWidget from '@/components/AIAssistantWidget';
-
-const ibmPlexSans = IBM_Plex_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-ibm-plex',
-  display: 'swap',
-});
-
-const jetBrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-jetbrains-mono',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: 'S SQUARE ELECTRONICS | PCB Component Hub',
@@ -32,37 +17,30 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${ibmPlexSans.variable} ${jetBrainsMono.variable}`}>
-      <body className="bg-[#f6f5f1] text-[#161513] min-h-screen flex flex-col font-sans antialiased bg-cad-grid selection:bg-[#9a6320]/15 selection:text-[#161513]">
+    <html lang="en">
+      <body className="bg-slate-50 text-slate-900 min-h-screen flex flex-col font-sans antialiased bg-dot-pattern selection:bg-blue-200">
         <Navbar />
 
-        <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 w-full">
-          {children}
+        <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full relative">
+          {/* Subtle background glow effect */}
+          <div className="absolute top-0 -left-4 w-72 h-72 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 pointer-events-none"></div>
+          <div className="absolute top-40 -right-4 w-72 h-72 bg-emerald-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 pointer-events-none"></div>
+          <div className="relative z-10">
+            {children}
+          </div>
         </main>
 
-        <footer className="border-t border-[#161513]/10 bg-[#f6f5f1] py-8 text-[#52504a] text-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 sm:pr-64 lg:pr-64 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <p className="font-medium text-[#161513]">
-                S SQUARE ELECTRONICS{' '}
-                <span className="font-mono text-xs text-[#76736c] ml-1.5">
-                  PCB Component Hub
-                </span>
-              </p>
-              <p className="text-xs text-[#76736c]">
-                &copy; {new Date().getFullYear()} S SQUARE ELECTRONICS. Engineered for hardware design teams.
-              </p>
-            </div>
-            <div className="text-xs sm:text-sm text-[#52504a]">
-              Engineering support:{' '}
-              <a
-                href="mailto:ssquareelectronics2026@gmail.com?subject=Regarding%20PCB%20Component%20Request"
-                className="font-mono text-xs sm:text-[13px] text-[#9a6320] hover:text-[#7a4c14] underline underline-offset-4 transition-colors duration-150 ease-unslop"
-              >
-                ssquareelectronics2026@gmail.com
-              </a>
-            </div>
-          </div>
+        <footer className="border-t border-slate-200 py-8 text-center text-slate-400 text-sm font-medium bg-white/50 backdrop-blur-sm space-y-2">
+          <p>
+            Questions or custom component requests? Contact us at{' '}
+            <a
+              href="mailto:ssquareelectronics2026@gmail.com?subject=Regarding%20PCB%20Component%20Request"
+              className="text-blue-600 hover:text-blue-700 font-semibold underline transition-colors"
+            >
+              ssquareelectronics2026@gmail.com
+            </a>
+          </p>
+          <p>&copy; {new Date().getFullYear()} S SQUARE ELECTRONICS — PCB Component Hub. Built for Electronic Engineers.</p>
         </footer>
 
         {/* Global Floating AI Hardware Assistant */}
