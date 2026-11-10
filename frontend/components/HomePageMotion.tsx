@@ -1,407 +1,632 @@
 'use client';
+import { useState } from 'react';
 import Link from 'next/link';
 import { motion, type Variants } from 'framer-motion';
+import {
+  ArrowRight,
+  BookOpen,
+  Cpu,
+  FileCode2,
+  Layers,
+  Mail,
+  Ruler,
+  Terminal,
+} from 'lucide-react';
 
-const containerVariants: Variants = {
+const fadeEase = [0.22, 1, 0.36, 1] as const;
+
+const heroContainer: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.12,
-      delayChildren: 0.1,
+      staggerChildren: 0.045,
     },
   },
 };
 
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 22 },
+const heroItem: Variants = {
+  hidden: { opacity: 0, y: 8 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.55, ease: 'easeOut' },
-  },
-};
-
-const cardHoverVariants: Variants = {
-  hover: {
-    y: -8,
-    scale: 1.01,
-    boxShadow: '0 20px 35px -10px rgba(37, 99, 235, 0.12)',
-    transition: { duration: 0.25, ease: 'easeOut' },
+    transition: { duration: 0.36, ease: fadeEase },
   },
 };
 
 export default function HomePageMotion() {
+  const [cadView, setCadView] = useState<'footprint' | 'symbol'>('footprint');
+
   return (
-    <div className="space-y-16 sm:space-y-24 relative z-10 pb-8">
-      
-      {/* HERO SECTION */}
-      <motion.section 
+    <div className="space-y-16 sm:space-y-20 pb-8">
+      {/* HERO SECTION: Asymmetric Engineering Workbench */}
+      <motion.section
         initial="hidden"
         animate="visible"
-        variants={containerVariants}
-        className="text-center py-12 sm:py-20 px-4 bg-white/75 border border-slate-200/80 backdrop-blur-md rounded-[2.5rem] shadow-xl shadow-slate-200/50 relative overflow-hidden"
+        variants={heroContainer}
+        className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center pt-4 sm:pt-8 lg:pt-12"
       >
-        {/* Animated ambient background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-50/70 via-white to-emerald-50/40 pointer-events-none"></div>
-        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl pointer-events-none"></div>
-        
-        <div className="relative z-10 max-w-4xl mx-auto space-y-6">
-          
-          {/* Prominent Centered Logo with Gentle Floating Animation */}
-          <motion.div variants={itemVariants} className="flex justify-center items-center">
-            <motion.div
-              animate={{
-                y: [0, -8, 0],
-              }}
-              transition={{
-                repeat: Infinity,
-                duration: 4,
-                ease: 'easeInOut',
-              }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.98 }}
-              className="relative inline-flex items-center justify-center p-2 cursor-pointer group"
-            >
-              {/* Soft ambient pulse glow behind logo */}
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 via-sky-300/20 to-emerald-400/20 rounded-full blur-2xl opacity-60 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none scale-125" />
-              
-              <img 
-                src="/logo.png" 
-                alt="S SQUARE ELECTRONICS Logo" 
-                className="relative z-10 w-48 sm:w-60 md:w-72 lg:w-80 h-auto object-contain drop-shadow-md select-none" 
+        {/* Left Column: Product Proposition & Primary Actions */}
+        <div className="lg:col-span-6 space-y-6">
+          {/* Clean Brand Mark Lockup */}
+          <motion.div variants={heroItem} className="flex items-center gap-4">
+            <div className="w-24 sm:w-28 rounded-xl bg-white border border-[#161513]/10 px-2.5 py-2 flex items-center justify-center flex-shrink-0 shadow-[0_1px_2px_rgba(22,21,19,0.05)]">
+              <img
+                src="/logo.png"
+                alt="S SQUARE ELECTRONICS IC Package Mark"
+                className="w-full h-auto object-contain select-none"
               />
-            </motion.div>
+            </div>
+            <div className="space-y-1">
+              <p className="font-mono text-xs text-[#9a6320] tracking-[0.01em] tabular-nums">
+                SSQ-CAD · KiCAD 7 / 8
+              </p>
+              <p className="text-sm font-medium text-[#161513]">
+                Hardware Component Library
+              </p>
+              <p className="text-xs text-[#76736c]">
+                Symbols, footprints &amp; custom board routing
+              </p>
+            </div>
           </motion.div>
 
-          {/* Main Title */}
-          <motion.h1 
-            variants={itemVariants}
-            className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-slate-900 leading-[1.15]"
+          {/* Headline */}
+          <motion.h1
+            variants={heroItem}
+            className="text-4xl sm:text-[44px] lg:text-[52px] font-medium tracking-[-0.025em] text-[#161513] leading-[1.06]"
           >
-            PCB Component Hub
+            PCB Component Hub for KiCAD engineering
           </motion.h1>
 
-          {/* Descriptive CAD text */}
-          <motion.p 
-            variants={itemVariants}
-            className="text-slate-600 text-base sm:text-xl font-medium max-w-2xl mx-auto leading-relaxed"
+          {/* Technical Description */}
+          <motion.p
+            variants={heroItem}
+            className="text-[#52504a] text-base sm:text-lg max-w-xl leading-relaxed font-normal"
           >
-            Your dedicated engineering resource for verified KiCAD schematic symbols (<code className="text-blue-700 bg-blue-50 font-semibold px-1.5 py-0.5 rounded text-sm sm:text-base border border-blue-100">.kicad_sym</code>) and PCB footprints (<code className="text-emerald-700 bg-emerald-50 font-semibold px-1.5 py-0.5 rounded text-sm sm:text-base border border-emerald-100">.kicad_mod</code>).
+            Verified schematic symbols (
+            <code className="font-mono text-[13px] px-1.5 py-0.5 bg-[#eeede8] text-[#9a6320] rounded border border-[#161513]/10">
+              .kicad_sym
+            </code>
+            ) and land patterns (
+            <code className="font-mono text-[13px] px-1.5 py-0.5 bg-[#eeede8] text-[#167c4c] rounded border border-[#161513]/10">
+              .kicad_mod
+            </code>
+            ) checked against manufacturer mechanical drawings, ready for schematic capture and routing.
           </motion.p>
 
-          <motion.p 
-            variants={itemVariants}
-            className="text-slate-500 text-sm sm:text-base max-w-xl mx-auto leading-relaxed"
-          >
-            Accelerate your hardware designs with verified, production-ready KiCAD libraries and step-by-step documentation.
-          </motion.p>
+          {/* Two Hero Actions (One Primary + One Secondary) */}
+          <motion.div variants={heroItem} className="pt-2 flex flex-wrap items-center gap-3">
+            <Link
+              href="/components"
+              className="h-11 px-5 bg-[#161513] hover:bg-[#2a2824] text-white font-medium text-sm rounded-lg inline-flex items-center gap-2 transition-colors duration-150 ease-unslop active:scale-[0.98]"
+            >
+              <span>Browse components</span>
+              <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+            </Link>
 
-          {/* Call-to-Action Buttons */}
-          <motion.div 
-            variants={itemVariants}
-            className="pt-4 flex flex-wrap items-center justify-center gap-3.5 sm:gap-4 max-w-2xl mx-auto"
-          >
-            <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }}>
-              <Link
-                href="/components"
-                className="px-7 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-black text-base rounded-2xl shadow-xl shadow-blue-600/25 transition-all flex items-center gap-2"
-              >
-                <span>Browse Components</span>
-                <span>&rarr;</span>
-              </Link>
-            </motion.div>
-
-            <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.96 }}>
-              <Link
-                href="/tutorial/symbol"
-                className="px-6 py-4 bg-white hover:bg-slate-50 text-slate-800 font-bold text-base rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all inline-block"
-              >
-                Symbol Tutorial
-              </Link>
-            </motion.div>
-
-            <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.96 }}>
-              <Link
-                href="/tutorial/footprint"
-                className="px-6 py-4 bg-white hover:bg-slate-50 text-slate-800 font-bold text-base rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all inline-block"
-              >
-                Footprint Tutorial
-              </Link>
-            </motion.div>
-
-            <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }}>
-              <a
-                href="https://www.kicad.org/download/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-6 py-4 bg-slate-900 hover:bg-blue-600 text-white font-bold text-base rounded-2xl shadow-sm hover:shadow-lg hover:shadow-slate-900/10 transition-all inline-flex items-center gap-1.5"
-              >
-                <span>Download KiCAD</span>
-                <span className="text-xs">↗</span>
-              </a>
-            </motion.div>
+            <Link
+              href="/request/project"
+              className="h-11 px-5 bg-white hover:bg-[#eeede8] text-[#161513] border border-[#161513]/14 font-medium text-sm rounded-lg inline-flex items-center gap-2 transition-colors duration-150 ease-unslop active:scale-[0.98]"
+            >
+              <span>Request project design</span>
+            </Link>
           </motion.div>
 
+          {/* Quiet Spec Strip */}
+          <motion.div
+            variants={heroItem}
+            className="pt-4 border-t border-[#161513]/10 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-mono text-[#76736c] tabular-nums"
+          >
+            <span>IPC-7351B land patterns</span>
+            <span>S-expression source files</span>
+            <span>Direct fabrication Gerbers</span>
+          </motion.div>
         </div>
+
+        {/* Right Column: Live Code-Rendered KiCAD Artifact Preview */}
+        <motion.div variants={heroItem} className="lg:col-span-6">
+          <div className="bg-white border border-[#161513]/12 rounded-2xl overflow-hidden shadow-[0_8px_24px_rgba(22,21,19,0.06)]">
+            {/* CAD Instrument Header */}
+            <div className="px-4 py-3 bg-[#f6f5f1] border-b border-[#161513]/10 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 font-mono text-xs text-[#52504a] tabular-nums">
+                <span className="w-2 h-2 rounded-full bg-[#167c4c]" aria-hidden="true" />
+                <span>SSQ-QFP32 · Rev 8.0</span>
+              </div>
+
+              {/* Interactive CAD Mode Switcher */}
+              <div className="inline-flex bg-[#eeede8] p-0.5 rounded-lg border border-[#161513]/8">
+                <button
+                  type="button"
+                  onClick={() => setCadView('footprint')}
+                  className={`h-7 px-2.5 rounded-md font-mono text-[11px] transition-colors duration-150 ease-unslop ${
+                    cadView === 'footprint'
+                      ? 'bg-[#151514] text-white'
+                      : 'text-[#52504a] hover:text-[#161513]'
+                  }`}
+                >
+                  .kicad_mod
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCadView('symbol')}
+                  className={`h-7 px-2.5 rounded-md font-mono text-[11px] transition-colors duration-150 ease-unslop ${
+                    cadView === 'symbol'
+                      ? 'bg-[#9a6320] text-white'
+                      : 'text-[#52504a] hover:text-[#161513]'
+                  }`}
+                >
+                  .kicad_sym
+                </button>
+              </div>
+            </div>
+
+            {/* CAD Drafting Canvas */}
+            {cadView === 'footprint' ? (
+              <div className="h-[320px] sm:h-[360px] bg-soldermask-grid relative p-4 flex items-center justify-center">
+                {/* Corner coordinate markers */}
+                <span className="absolute top-3 left-4 font-mono text-[11px] text-[#8f8c84] tabular-nums">
+                  X 0.00 Y 0.00 GRID 0.50mm
+                </span>
+                <span className="absolute top-3 right-4 font-mono text-[11px] text-[#c89452] tabular-nums">
+                  F.Cu + F.SilkS
+                </span>
+                <span className="absolute bottom-3 left-4 font-mono text-[11px] text-[#8f8c84] tabular-nums">
+                  LQFP-32 7.0×7.0mm
+                </span>
+                <span className="absolute bottom-3 right-4 font-mono text-[11px] text-[#4cc38a] tabular-nums">
+                  DRC 0.00mm
+                </span>
+
+                {/* Precision QFP-32 ENIG Footprint SVG */}
+                <svg
+                  viewBox="0 0 280 240"
+                  className="w-full max-w-[280px] h-auto"
+                  role="img"
+                  aria-label="KiCAD 32-pin Quad Flat Package PCB footprint diagram"
+                >
+                  {/* Courtyard hairline */}
+                  <rect
+                    x="44"
+                    y="24"
+                    width="192"
+                    height="192"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.22)"
+                    strokeWidth="0.75"
+                    strokeDasharray="3 3"
+                  />
+
+                  {/* Center Crosshair */}
+                  <line x1="140" y1="36" x2="140" y2="204" stroke="rgba(255,255,255,0.12)" strokeWidth="0.75" />
+                  <line x1="56" y1="120" x2="224" y2="120" stroke="rgba(255,255,255,0.12)" strokeWidth="0.75" />
+
+                  {/* Silkscreen Body Outline */}
+                  <polygon
+                    points="82,62 198,62 198,178 76,178 76,68"
+                    fill="rgba(255,255,255,0.03)"
+                    stroke="#e5e4df"
+                    strokeWidth="1.2"
+                  />
+
+                  {/* Central ENIG Exposed Pad */}
+                  <rect
+                    x="104"
+                    y="84"
+                    width="72"
+                    height="72"
+                    rx="2"
+                    fill="rgba(200,148,82,0.22)"
+                    stroke="#c89452"
+                    strokeWidth="1.2"
+                  />
+                  {/* Exposed pad paste cutouts */}
+                  <rect x="110" y="90" width="26" height="26" fill="#c89452" opacity="0.72" />
+                  <rect x="144" y="90" width="26" height="26" fill="#c89452" opacity="0.72" />
+                  <rect x="110" y="124" width="26" height="26" fill="#c89452" opacity="0.72" />
+                  <rect x="144" y="124" width="26" height="26" fill="#c89452" opacity="0.72" />
+
+                  {/* Top 8 SMD Pads */}
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+                    <rect
+                      key={`t-${i}`}
+                      x={84 + i * 15}
+                      y={38}
+                      width="8"
+                      height="18"
+                      rx="1"
+                      fill="#c89452"
+                    />
+                  ))}
+                  {/* Bottom 8 SMD Pads */}
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+                    <rect
+                      key={`b-${i}`}
+                      x={84 + i * 15}
+                      y={184}
+                      width="8"
+                      height="18"
+                      rx="1"
+                      fill="#c89452"
+                    />
+                  ))}
+                  {/* Left 8 SMD Pads */}
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+                    <rect
+                      key={`l-${i}`}
+                      x={52}
+                      y={64 + i * 15}
+                      width="18"
+                      height="8"
+                      rx="1"
+                      fill="#c89452"
+                    />
+                  ))}
+                  {/* Right 8 SMD Pads */}
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+                    <rect
+                      key={`r-${i}`}
+                      x={210}
+                      y={64 + i * 15}
+                      width="18"
+                      height="8"
+                      rx="1"
+                      fill="#c89452"
+                    />
+                  ))}
+
+                  {/* Pin 1 Fiducial Dot */}
+                  <circle cx="63" cy="48" r="3" fill="#c89452" />
+                  {/* Designator U1 */}
+                  <text
+                    x="140"
+                    y="123"
+                    textAnchor="middle"
+                    fill="#ffffff"
+                    fontSize="11"
+                    fontFamily="var(--font-jetbrains-mono), monospace"
+                    fontWeight="500"
+                  >
+                    U1
+                  </text>
+                </svg>
+              </div>
+            ) : (
+              <div className="h-[320px] sm:h-[360px] bg-vellum-grid relative p-4 flex items-center justify-center">
+                <span className="absolute top-3 left-4 font-mono text-[11px] text-[#76736c] tabular-nums">
+                  SHEET 01 / IEC-60617
+                </span>
+                <span className="absolute top-3 right-4 font-mono text-[11px] text-[#9a6320] tabular-nums">
+                  REF U?
+                </span>
+                <span className="absolute bottom-3 left-4 font-mono text-[11px] text-[#76736c] tabular-nums">
+                  GRID 50 mil (1.27mm)
+                </span>
+                <span className="absolute bottom-3 right-4 font-mono text-[11px] text-[#167c4c] tabular-nums">
+                  ERC Verified
+                </span>
+
+                {/* Authentic KiCAD Schematic Symbol Diagram */}
+                <svg
+                  viewBox="0 0 320 220"
+                  className="w-full max-w-[320px] h-auto"
+                  role="img"
+                  aria-label="KiCAD microcontroller schematic symbol diagram"
+                >
+                  {/* Symbol Frame Box */}
+                  <rect
+                    x="92"
+                    y="38"
+                    width="136"
+                    height="144"
+                    fill="#f7f1de"
+                    stroke="#7c281c"
+                    strokeWidth="1.5"
+                  />
+                  {/* Designator & Value */}
+                  <text
+                    x="94"
+                    y="28"
+                    fill="#167c4c"
+                    fontSize="11"
+                    fontFamily="var(--font-jetbrains-mono), monospace"
+                    fontWeight="500"
+                  >
+                    U?
+                  </text>
+                  <text
+                    x="160"
+                    y="28"
+                    fill="#9a6320"
+                    fontSize="11"
+                    fontFamily="var(--font-jetbrains-mono), monospace"
+                    fontWeight="500"
+                  >
+                    SSQ-MCU32
+                  </text>
+
+                  {/* Left Pins */}
+                  {[
+                    { pin: '1', name: '3V3', y: 64 },
+                    { pin: '2', name: 'EN', y: 96 },
+                    { pin: '3', name: 'IO0', y: 128 },
+                    { pin: '4', name: 'RXD', y: 160 },
+                  ].map((item) => (
+                    <g key={item.pin}>
+                      <line x1="56" y1={item.y} x2="92" y2={item.y} stroke="#7c281c" strokeWidth="1.4" />
+                      <circle cx="56" cy={item.y} r="2.2" fill="none" stroke="#7c281c" strokeWidth="1.2" />
+                      <text
+                        x="72"
+                        y={item.y - 4}
+                        fill="#76736c"
+                        fontSize="9"
+                        fontFamily="var(--font-jetbrains-mono), monospace"
+                      >
+                        {item.pin}
+                      </text>
+                      <text
+                        x="98"
+                        y={item.y + 3}
+                        fill="#167c4c"
+                        fontSize="10"
+                        fontFamily="var(--font-jetbrains-mono), monospace"
+                      >
+                        {item.name}
+                      </text>
+                    </g>
+                  ))}
+
+                  {/* Right Pins */}
+                  {[
+                    { pin: '5', name: 'SDA', y: 64 },
+                    { pin: '6', name: 'SCL', y: 96 },
+                    { pin: '7', name: 'TXD', y: 128 },
+                    { pin: '8', name: 'GND', y: 160 },
+                  ].map((item) => (
+                    <g key={item.pin}>
+                      <line x1="228" y1={item.y} x2="264" y2={item.y} stroke="#7c281c" strokeWidth="1.4" />
+                      <circle cx="264" cy={item.y} r="2.2" fill="none" stroke="#7c281c" strokeWidth="1.2" />
+                      <text
+                        x="240"
+                        y={item.y - 4}
+                        fill="#76736c"
+                        fontSize="9"
+                        fontFamily="var(--font-jetbrains-mono), monospace"
+                      >
+                        {item.pin}
+                      </text>
+                      <text
+                        x="222"
+                        y={item.y + 3}
+                        textAnchor="end"
+                        fill="#167c4c"
+                        fontSize="10"
+                        fontFamily="var(--font-jetbrains-mono), monospace"
+                      >
+                        {item.name}
+                      </text>
+                    </g>
+                  ))}
+                </svg>
+              </div>
+            )}
+
+            {/* CAD Inspector Spec Footer */}
+            <div className="px-4 py-3 bg-[#f6f5f1] border-t border-[#161513]/10 flex flex-wrap items-center justify-between gap-3">
+              <span className="font-mono text-xs text-[#52504a] tabular-nums">
+                {cadView === 'footprint'
+                  ? '32 pads · 0.80mm pitch · Thermal via grid'
+                  : '8 logical pins · ERC passive/power typed'}
+              </span>
+              <Link
+                href="/components"
+                className="font-mono text-xs font-medium text-[#9a6320] hover:text-[#7a4c14] inline-flex items-center gap-1 transition-colors duration-150 ease-unslop"
+              >
+                <span>Open library</span>
+                <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
+              </Link>
+            </div>
+          </div>
+        </motion.div>
       </motion.section>
 
-      {/* HOW IT WORKS / PLATFORM WORKFLOW */}
-      <section className="space-y-10">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-50px' }}
-          transition={{ duration: 0.5 }}
-          className="text-center max-w-2xl mx-auto space-y-3"
-        >
-          <span className="text-xs uppercase font-extrabold tracking-widest text-blue-600 bg-blue-50 border border-blue-100 rounded-full px-3.5 py-1">
-            Platform Workflow
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            How It Works
-          </h2>
-          <p className="text-slate-500 font-medium text-base">
-            Everything you need to go from component selection to PCB routing in KiCAD.
+      {/* SECTION 01: ENGINEERING WORKFLOW */}
+      <section className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#161513]/10 pb-4">
+          <div className="space-y-1">
+            <p className="font-mono text-xs text-[#76736c] tabular-nums">01 · Workflow</p>
+            <h2 className="text-2xl sm:text-3xl font-medium text-[#161513] tracking-[-0.015em]">
+              From component selection to routed board
+            </h2>
+          </div>
+          <p className="text-sm text-[#52504a] max-w-sm">
+            Structured CAD assets, visual import guides, and direct engineering turnarounds.
           </p>
-        </motion.div>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          
-          {/* Card 1: Browse & Download */}
-          <motion.div
-            initial={{ opacity: 0, y: 25 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-50px' }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            variants={cardHoverVariants}
-            whileHover="hover"
-            className="bg-white border border-slate-200/90 rounded-3xl p-8 shadow-sm flex flex-col justify-between group cursor-default"
-          >
-            <div className="space-y-4">
-              <motion.div 
-                whileHover={{ rotate: 10, scale: 1.1 }}
-                className="w-14 h-14 bg-blue-50 border border-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl font-black transition-transform"
-              >
-                📦
-              </motion.div>
-              <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                1. Browse &amp; Download
-              </h3>
-              <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-                Search through our catalog of verified ICs, microcontrollers, SMD passives, and connectors. Preview 2D footprints and download CAD files directly.
+        {/* Connected Drafting Grid Row */}
+        <div className="bg-white border border-[#161513]/10 rounded-2xl grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#161513]/10 overflow-hidden">
+          {/* Column 1: Catalog */}
+          <div className="p-6 flex flex-col justify-between gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="w-9 h-9 rounded-lg bg-[#eeede8] border border-[#161513]/10 text-[#161513] flex items-center justify-center">
+                  <Cpu className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                </div>
+                <span className="font-mono text-xs text-[#76736c] tabular-nums">01</span>
+              </div>
+              <h3 className="text-lg font-medium text-[#161513]">Browse and download</h3>
+              <p className="text-sm text-[#52504a] leading-relaxed">
+                Search verified ICs, microcontrollers, passives, and sensors. Inspect symbol and 2D land patterns before downloading source files.
               </p>
             </div>
-            <div className="pt-6 mt-6 border-t border-slate-100">
+            <div className="pt-4 border-t border-[#161513]/8">
               <Link
                 href="/components"
-                className="text-blue-600 font-bold text-sm inline-flex items-center gap-1.5 hover:gap-2.5 transition-all"
+                className="text-sm font-medium text-[#9a6320] hover:text-[#7a4c14] inline-flex items-center gap-1.5 transition-colors duration-150 ease-unslop"
               >
-                <span>Explore Catalog</span>
-                <span>&rarr;</span>
+                <span>Explore catalog</span>
+                <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
               </Link>
             </div>
-          </motion.div>
+          </div>
 
-          {/* Card 2: Step-by-Step Tutorials */}
-          <motion.div
-            initial={{ opacity: 0, y: 25 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-50px' }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            variants={cardHoverVariants}
-            whileHover="hover"
-            className="bg-white border border-slate-200/90 rounded-3xl p-8 shadow-sm flex flex-col justify-between group cursor-default"
-          >
-            <div className="space-y-4">
-              <motion.div 
-                whileHover={{ rotate: 10, scale: 1.1 }}
-                className="w-14 h-14 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl font-black transition-transform"
-              >
-                📚
-              </motion.div>
-              <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                2. Step-by-Step Tutorials
-              </h3>
-              <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-                Follow our official documentation tutorials with screenshots to import symbols into the KiCAD Symbol Editor and footprints into the Footprint Editor.
+          {/* Column 2: Documentation */}
+          <div className="p-6 flex flex-col justify-between gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="w-9 h-9 rounded-lg bg-[#eeede8] border border-[#161513]/10 text-[#161513] flex items-center justify-center">
+                  <BookOpen className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                </div>
+                <span className="font-mono text-xs text-[#76736c] tabular-nums">02</span>
+              </div>
+              <h3 className="text-lg font-medium text-[#161513]">Step-by-step tutorials</h3>
+              <p className="text-sm text-[#52504a] leading-relaxed">
+                Follow illustrated KiCAD Symbol Editor and Footprint Editor guides to map library folders and assign footprints cleanly.
               </p>
             </div>
-            <div className="pt-6 mt-6 border-t border-slate-100 flex items-center gap-4">
+            <div className="pt-4 border-t border-[#161513]/8 flex flex-wrap items-center gap-4">
               <Link
                 href="/tutorial/symbol"
-                className="text-blue-600 font-bold text-sm inline-flex items-center gap-1 hover:underline"
+                className="text-sm font-medium text-[#9a6320] hover:text-[#7a4c14] inline-flex items-center gap-1 transition-colors duration-150 ease-unslop"
               >
-                Symbol Guide &rarr;
+                <span>Symbol guide</span>
+                <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
               </Link>
               <Link
                 href="/tutorial/footprint"
-                className="text-emerald-600 font-bold text-sm inline-flex items-center gap-1 hover:underline"
+                className="text-sm font-medium text-[#167c4c] hover:text-[#115e39] inline-flex items-center gap-1 transition-colors duration-150 ease-unslop"
               >
-                Footprint Guide &rarr;
+                <span>Footprint guide</span>
+                <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
               </Link>
             </div>
-          </motion.div>
+          </div>
 
-          {/* Card 3: Custom Component Requests */}
-          <motion.div
-            initial={{ opacity: 0, y: 25 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-50px' }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            variants={cardHoverVariants}
-            whileHover="hover"
-            className="bg-white border border-slate-200/90 rounded-3xl p-8 shadow-sm flex flex-col justify-between group cursor-default"
-          >
-            <div className="space-y-4">
-              <motion.div 
-                whileHover={{ rotate: 10, scale: 1.1 }}
-                className="w-14 h-14 bg-amber-50 border border-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-2xl font-black transition-transform"
-              >
-                🚀
-              </motion.div>
-              <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                3. Request Custom Parts
-              </h3>
-              <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-                Can&apos;t find a specific component? Submit a reference URL, datasheet, or part description. Our team will design, verify, and email you when it&apos;s ready.
+          {/* Column 3: Custom Engineering */}
+          <div className="p-6 flex flex-col justify-between gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="w-9 h-9 rounded-lg bg-[#eeede8] border border-[#161513]/10 text-[#161513] flex items-center justify-center">
+                  <Layers className="w-[18px] h-[18px]" strokeWidth={1.5} />
+                </div>
+                <span className="font-mono text-xs text-[#76736c] tabular-nums">03</span>
+              </div>
+              <h3 className="text-lg font-medium text-[#161513]">Request custom work</h3>
+              <p className="text-sm text-[#52504a] leading-relaxed">
+                Need a missing component library or full custom PCB schematic, board routing, and fabrication Gerber archive? Submit your specs directly.
               </p>
             </div>
-            <div className="pt-6 mt-6 border-t border-slate-100 flex items-center gap-3">
+            <div className="pt-4 border-t border-[#161513]/8 flex flex-wrap items-center gap-4">
               <Link
                 href="/request/component"
-                className="text-amber-700 font-bold text-sm inline-flex items-center gap-1 hover:underline"
+                className="text-sm font-medium text-[#9a6320] hover:text-[#7a4c14] inline-flex items-center gap-1 transition-colors duration-150 ease-unslop"
               >
-                <span>Request Component</span>
-                <span>&rarr;</span>
+                <span>Request component</span>
+                <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
               </Link>
-              <span className="text-slate-300">•</span>
               <Link
                 href="/request/project"
-                className="text-blue-600 font-bold text-sm inline-flex items-center gap-1 hover:underline"
+                className="text-sm font-medium text-[#161513] hover:text-[#9a6320] inline-flex items-center gap-1 transition-colors duration-150 ease-unslop"
               >
-                <span>Project Design</span>
-                <span>&rarr;</span>
+                <span>Project design</span>
+                <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
               </Link>
             </div>
-          </motion.div>
-
+          </div>
         </div>
       </section>
 
-      {/* VALUE HIGHLIGHTS */}
-      <motion.section 
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-50px' }}
-        transition={{ duration: 0.6 }}
-        className="bg-slate-900 text-white rounded-[2.5rem] p-8 sm:p-14 relative overflow-hidden shadow-2xl"
-      >
-        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="max-w-4xl mx-auto space-y-10 relative z-10">
-          <div className="text-center space-y-3">
-            <span className="text-xs uppercase font-extrabold tracking-widest text-blue-400 bg-blue-950/60 border border-blue-800 rounded-full px-4 py-1.5">
-              Why S SQUARE ELECTRONICS
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
-              Designed by Hardware Engineers, for Hardware Engineers
+      {/* SECTION 02: ENGINEERING STANDARDS (Dark Instrument Chassis) */}
+      <section className="bg-[#151514] text-[#f2f1ed] rounded-2xl border border-white/10 p-6 sm:p-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+          <div className="lg:col-span-5 space-y-3">
+            <p className="font-mono text-xs text-[#c89452] tabular-nums">02 · Standards</p>
+            <h2 className="text-2xl sm:text-3xl font-medium tracking-[-0.015em] text-white leading-snug">
+              Built for hardware engineers, verified at pad level
             </h2>
+            <p className="text-sm text-[#a6a39c] leading-relaxed">
+              Every symbol, land pattern, and custom PCB project package follows clean KiCAD native structure without third-party format conversion.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <motion.div whileHover={{ x: 4 }} className="flex gap-4 items-start transition-all">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-lg flex-shrink-0">
-                ✓
-              </div>
-              <div>
-                <h4 className="text-lg font-bold mb-1">KiCAD 7 &amp; 8 Ready</h4>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  All exported files strictly follow KiCAD s-expression standards for instant import without format conversion.
-                </p>
-              </div>
-            </motion.div>
+          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-5 rounded-xl bg-[#1f1e1c] border border-white/10 space-y-2.5">
+              <FileCode2 className="w-4 h-4 text-[#c89452]" strokeWidth={1.5} />
+              <h3 className="text-base font-medium text-white">KiCAD 7 &amp; 8 native</h3>
+              <p className="text-sm text-[#a6a39c] leading-relaxed">
+                Standard S-expression{' '}
+                <code className="font-mono text-xs text-[#c89452]">.kicad_sym</code> and{' '}
+                <code className="font-mono text-xs text-[#c89452]">.kicad_mod</code> formats ready for immediate import.
+              </p>
+            </div>
 
-            <motion.div whileHover={{ x: 4 }} className="flex gap-4 items-start transition-all">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg flex-shrink-0">
-                ✓
-              </div>
-              <div>
-                <h4 className="text-lg font-bold mb-1">Verified Dimensions &amp; Pinouts</h4>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Footprint pad geometries, pin numbering, and 3D keep-outs are checked against manufacturer specifications.
-                </p>
-              </div>
-            </motion.div>
+            <div className="p-5 rounded-xl bg-[#1f1e1c] border border-white/10 space-y-2.5">
+              <Ruler className="w-4 h-4 text-[#c89452]" strokeWidth={1.5} />
+              <h3 className="text-base font-medium text-white">Verified pinouts &amp; pitch</h3>
+              <p className="text-sm text-[#a6a39c] leading-relaxed">
+                Pad geometries, pin numbering, courtyards, and silkscreen markings checked directly against datasheet drawings.
+              </p>
+            </div>
 
-            <motion.div whileHover={{ x: 4 }} className="flex gap-4 items-start transition-all">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-lg flex-shrink-0">
-                ✓
-              </div>
-              <div>
-                <h4 className="text-lg font-bold mb-1">100% Free &amp; Open Access</h4>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  No subscription fees or download caps. Open access for hobbyists, engineering students, and commercial teams.
-                </p>
-              </div>
-            </motion.div>
+            <div className="p-5 rounded-xl bg-[#1f1e1c] border border-white/10 space-y-2.5">
+              <Terminal className="w-4 h-4 text-[#c89452]" strokeWidth={1.5} />
+              <h3 className="text-base font-medium text-white">Open library access</h3>
+              <p className="text-sm text-[#a6a39c] leading-relaxed">
+                Zero subscription gates or download quotas for hobbyists, university labs, and embedded engineering teams.
+              </p>
+            </div>
 
-            <motion.div whileHover={{ x: 4 }} className="flex gap-4 items-start transition-all">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-lg flex-shrink-0">
-                ✓
-              </div>
-              <div>
-                <h4 className="text-lg font-bold mb-1">Direct Engineering Support</h4>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Have questions or custom requirements? Email us directly at <a href="mailto:ssquareelectronics2026@gmail.com" className="text-blue-400 underline">ssquareelectronics2026@gmail.com</a>.
-                </p>
-              </div>
-            </motion.div>
+            <div className="p-5 rounded-xl bg-[#1f1e1c] border border-white/10 space-y-2.5">
+              <Mail className="w-4 h-4 text-[#c89452]" strokeWidth={1.5} />
+              <h3 className="text-base font-medium text-white">Direct engineering contact</h3>
+              <p className="text-sm text-[#a6a39c] leading-relaxed">
+                Need package revisions or PCB feedback? Write to{' '}
+                <a
+                  href="mailto:ssquareelectronics2026@gmail.com"
+                  className="font-mono text-xs text-[#c89452] hover:underline underline-offset-2"
+                >
+                  ssquareelectronics2026@gmail.com
+                </a>
+                .
+              </p>
+            </div>
           </div>
         </div>
-      </motion.section>
+      </section>
 
-      {/* FINAL CALL TO ACTION */}
-      <motion.section 
-        initial={{ opacity: 0, y: 25 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-50px' }}
-        transition={{ duration: 0.55 }}
-        className="text-center bg-white border border-slate-200 rounded-3xl p-10 sm:p-14 shadow-sm"
-      >
-        <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-3">
-          Ready to start your PCB layout?
-        </h3>
-        <p className="text-slate-500 text-base max-w-lg mx-auto mb-8 font-medium">
-          Browse our component catalog or request a custom footprint for your hardware project.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-3.5">
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
-            <Link
-              href="/components"
-              className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 transition-all text-sm inline-block"
-            >
-              Browse Catalog &rarr;
-            </Link>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
-            <Link
-              href="/request/component"
-              className="px-6 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl transition-all text-sm inline-block border border-slate-200"
-            >
-              Request Component
-            </Link>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
-            <Link
-              href="/request/project"
-              className="px-6 py-3.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl transition-all text-sm inline-block border border-indigo-200"
-            >
-              Request Project Design
-            </Link>
-          </motion.div>
+      {/* SECTION 03: ACTION STRIP */}
+      <section className="bg-white border border-[#161513]/10 rounded-2xl p-6 sm:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="space-y-1.5">
+          <h3 className="text-xl sm:text-2xl font-medium text-[#161513] tracking-[-0.015em]">
+            Ready to start your PCB layout
+          </h3>
+          <p className="text-sm text-[#52504a] max-w-lg">
+            Browse verified catalog parts or request custom footprints and full board designs from our engineering desk.
+          </p>
         </div>
-      </motion.section>
 
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href="/components"
+            className="h-10 px-4 bg-[#161513] hover:bg-[#2a2824] text-white font-medium text-sm rounded-lg inline-flex items-center gap-2 transition-colors duration-150 ease-unslop active:scale-[0.98]"
+          >
+            <span>Browse catalog</span>
+            <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+          </Link>
+          <Link
+            href="/request/component"
+            className="h-10 px-4 bg-[#eeede8] hover:bg-[#e5e3dc] text-[#161513] border border-[#161513]/10 font-medium text-sm rounded-lg inline-flex items-center transition-colors duration-150 ease-unslop active:scale-[0.98]"
+          >
+            Request component
+          </Link>
+          <Link
+            href="/request/project"
+            className="h-10 px-4 bg-white hover:bg-[#f6f5f1] text-[#9a6320] border border-[#9a6320]/30 font-medium text-sm rounded-lg inline-flex items-center transition-colors duration-150 ease-unslop active:scale-[0.98]"
+          >
+            Request project design
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

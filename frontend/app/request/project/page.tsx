@@ -3,6 +3,17 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import {
+  AlertCircle,
+  ArrowRight,
+  CheckCircle2,
+  FileText,
+  Image as ImageIcon,
+  Info,
+  Loader2,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 
 function sanitizeFileName(originalName: string): string {
   const lastDot = originalName.lastIndexOf('.');
@@ -14,7 +25,10 @@ function sanitizeFileName(originalName: string): string {
     ext = originalName.slice(lastDot);
   }
 
-  const cleanBase = base.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  const cleanBase = base
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
   const cleanExt = ext.replace(/[^a-zA-Z0-9._-]/g, '');
 
   return `${Date.now()}_${cleanBase || 'document'}${cleanExt}`;
@@ -109,7 +123,7 @@ export default function RequestProjectPage() {
     // Circuit Diagram / Datasheet / Component References is strictly Mandatory
     if (!hasFiles && !hasComponentReferences) {
       setErrorMessage(
-        'Please provide either Circuit Diagram / Datasheet file uploads OR your Component References & Links so our engineering team can design your board.'
+        'Please provide either Circuit Diagram / Datasheet file uploads or your Component References & Links so our engineering team can design your board.'
       );
       setLoading(false);
       return;
@@ -160,18 +174,16 @@ export default function RequestProjectPage() {
       ].join('\n');
 
       // 3. Insert into Supabase component_requests
-      const { error: dbError } = await supabase
-        .from('component_requests')
-        .insert([
-          {
-            component_name: `[PCB Project] ${trimmedProject}`,
-            user_email: trimmedEmail,
-            component_link: componentList.trim() || null,
-            description: structuredDescription,
-            file_url: primaryFileUrl,
-            status: 'Pending',
-          },
-        ]);
+      const { error: dbError } = await supabase.from('component_requests').insert([
+        {
+          component_name: `[PCB Project] ${trimmedProject}`,
+          user_email: trimmedEmail,
+          component_link: componentList.trim() || null,
+          description: structuredDescription,
+          file_url: primaryFileUrl,
+          status: 'Pending',
+        },
+      ]);
 
       if (dbError) {
         console.warn('Database note:', dbError);
@@ -212,15 +224,15 @@ export default function RequestProjectPage() {
             : 'None attached';
 
         const textMessage =
-          `⚡ <b>New Custom PCB Project Design Request!</b>\n\n` +
-          `📌 <b>Project:</b> ${escapeHtml(trimmedProject)}\n` +
-          `👤 <b>Client:</b> ${escapeHtml(trimmedClient)}\n` +
-          `📧 <b>Email:</b> ${escapeHtml(trimmedEmail)}\n` +
-          `📅 <b>Deadline:</b> ${escapeHtml(expectedDeadline || 'Flexible')}\n` +
-          `📐 <b>Constraints:</b> ${escapeHtml(boardConstraints.trim() || 'None')}\n` +
-          `🧩 <b>Components:</b> ${escapeHtml(componentList.trim() || 'None')}\n` +
-          `📝 <b>Notes:</b> ${escapeHtml(specialInstructions.trim() || 'None')}\n\n` +
-          `📂 <b>Circuit Diagrams & Datasheets:</b>\n${filesTelegramList}`;
+          `<b>New Custom PCB Project Design Request</b>\n\n` +
+          `<b>Project:</b> ${escapeHtml(trimmedProject)}\n` +
+          `<b>Client:</b> ${escapeHtml(trimmedClient)}\n` +
+          `<b>Email:</b> ${escapeHtml(trimmedEmail)}\n` +
+          `<b>Deadline:</b> ${escapeHtml(expectedDeadline || 'Flexible')}\n` +
+          `<b>Constraints:</b> ${escapeHtml(boardConstraints.trim() || 'None')}\n` +
+          `<b>Components:</b> ${escapeHtml(componentList.trim() || 'None')}\n` +
+          `<b>Notes:</b> ${escapeHtml(specialInstructions.trim() || 'None')}\n\n` +
+          `<b>Circuit Diagrams & Datasheets:</b>\n${filesTelegramList}`;
 
         fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
           method: 'POST',
@@ -233,7 +245,7 @@ export default function RequestProjectPage() {
         }).catch((tErr) => console.warn('Telegram error:', tErr));
       }
 
-      // 6. Open sleek success confirmation modal
+      // 6. Open success confirmation modal
       setSubmittedData({
         projectName: trimmedProject,
         clientName: trimmedClient,
@@ -256,7 +268,9 @@ export default function RequestProjectPage() {
       setExpectedDeadline('');
     } catch (err: unknown) {
       console.error('Submission error:', err);
-      setErrorMessage(err instanceof Error ? err.message : 'An error occurred while submitting.');
+      setErrorMessage(
+        err instanceof Error ? err.message : 'An error occurred while submitting.'
+      );
     } finally {
       setLoading(false);
     }
@@ -266,119 +280,136 @@ export default function RequestProjectPage() {
   const hasComponentReferences = Boolean(componentList.trim());
 
   return (
-    <div className="max-w-3xl mx-auto py-10 px-4 sm:px-6 relative z-10">
-      
+    <div className="max-w-3xl mx-auto py-4 sm:py-6 space-y-6">
       {/* Header */}
-      <div className="text-center space-y-3 mb-8">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-black uppercase tracking-wider shadow-sm">
-          <span>⚡ S SQUARE ELECTRONICS</span>
-          <span className="text-slate-300">•</span>
-          <span>Custom Hardware Engineering</span>
-        </div>
-
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
-          Request Project Design
-        </h1>
-
-        <p className="text-slate-600 text-base sm:text-lg max-w-2xl mx-auto font-medium leading-relaxed">
-          Need a complete PCB board designed for your hardware idea or circuit? Share your requirements and our engineering team at <strong>S SQUARE ELECTRONICS</strong> will design, route, and deliver a production-ready PCB.
+      <div className="space-y-3 border-b border-[#161513]/10 pb-6">
+        <p className="font-mono text-xs text-[#9a6320]">
+          S SQUARE ELECTRONICS · Custom engineering
         </p>
 
-        {/* Navigation pill pointing to component request if that's what user needs */}
-        <div className="pt-2">
+        <h1 className="text-3xl sm:text-4xl font-medium text-[#161513] tracking-[-0.02em]">
+          Request project design
+        </h1>
+
+        <p className="text-[#52504a] text-sm sm:text-base max-w-2xl leading-relaxed font-normal">
+          Share your schematic diagram, component references, and board requirements. Our engineering team at{' '}
+          <span className="font-medium text-[#161513]">S SQUARE ELECTRONICS</span> will route and deliver production-ready PCB and Gerber files.
+        </p>
+
+        <div className="pt-1">
           <Link
             href="/request/component"
-            className="text-xs font-bold text-slate-500 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 border border-slate-200 rounded-full px-4 py-2 transition-all inline-flex items-center gap-1.5"
+            className="text-sm font-medium text-[#9a6320] hover:text-[#7a4c14] inline-flex items-center gap-1.5 transition-colors duration-150 ease-unslop"
           >
-            <span>Only need a single footprint or symbol?</span>
-            <span className="text-blue-600 font-extrabold">Request Component &rarr;</span>
+            <span>Only need a single symbol or footprint? Request component</span>
+            <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
           </Link>
         </div>
       </div>
 
       {/* Helper Banner for Mandatory & Optional Fields */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-4 mb-6 text-xs sm:text-sm text-slate-700 flex items-start gap-3">
-        <span className="text-xl flex-shrink-0">💡</span>
-        <div className="leading-relaxed font-medium">
-          <strong>Mandatory Information:</strong> Project Name, Client / Company Name, Email Address, and at least one technical reference (either <strong>Circuit Diagram &amp; Datasheet uploads</strong> <em>or</em> <strong>Component References / Links</strong>) are required. <strong>Constraints of Board</strong> is strictly optional!
+      <div className="bg-white border border-[#161513]/10 rounded-xl p-4 text-xs sm:text-sm text-[#52504a] flex items-start gap-3">
+        <Info className="w-[18px] h-[18px] text-[#9a6320] mt-0.5 flex-shrink-0" strokeWidth={1.5} />
+        <div className="leading-relaxed">
+          <span className="font-medium text-[#161513]">Mandatory information: </span>
+          Project Name, Client / Company Name, Email Address, and at least one technical reference (either{' '}
+          <span className="font-medium text-[#161513]">Circuit Diagram &amp; Datasheet uploads</span>{' '}
+          or{' '}
+          <span className="font-medium text-[#161513]">Component References / Links</span>) are required. Constraints of Board is optional.
         </div>
       </div>
 
       {/* Error Message */}
       {errorMessage && (
-        <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm font-bold">
-          {errorMessage}
+        <div className="p-4 rounded-xl bg-[#dc2626]/[0.06] border border-[#dc2626]/20 text-[#991b1b] text-sm flex items-start gap-3">
+          <AlertCircle className="w-[18px] h-[18px] flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+          <span>{errorMessage}</span>
         </div>
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="bg-white border border-slate-200 p-6 sm:p-10 rounded-[2.5rem] shadow-xl shadow-slate-200/50 space-y-6">
-        
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white border border-[#161513]/10 p-6 sm:p-8 rounded-2xl space-y-6"
+      >
         {/* ROW 1: Project Name & Client/Company */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-2">
-              Project Name <span className="text-red-500">*</span>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-[#161513]">
+              Project name <span className="text-[#dc2626]">*</span>
             </label>
             <input
               type="text"
               required
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
-              placeholder="e.g. Smart Irrigation System, IoT Node"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+              placeholder="Smart Irrigation Controller, IoT Node"
+              className="w-full h-11 bg-[#f6f5f1] border border-[#161513]/12 rounded-lg px-4 text-[#161513] text-sm placeholder-[#76736c] focus:outline-none focus:border-[#9a6320] focus:bg-white transition-colors duration-150 ease-unslop"
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-2">
-              Client / Company Name <span className="text-red-500">*</span>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-[#161513]">
+              Client / company name <span className="text-[#dc2626]">*</span>
             </label>
             <input
               type="text"
               required
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}
-              placeholder="e.g. Alex Johnson or Apex Robotics"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+              placeholder="Alex Johnson or Apex Robotics"
+              className="w-full h-11 bg-[#f6f5f1] border border-[#161513]/12 rounded-lg px-4 text-[#161513] text-sm placeholder-[#76736c] focus:outline-none focus:border-[#9a6320] focus:bg-white transition-colors duration-150 ease-unslop"
             />
           </div>
         </div>
 
         {/* ROW 2: Email Address */}
-        <div>
-          <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-2">
-            Email Address <span className="text-red-500">*</span>
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-[#161513]">
+            Email address <span className="text-[#dc2626]">*</span>
           </label>
           <input
             type="email"
             required
             value={userEmail}
             onChange={(e) => setUserEmail(e.target.value)}
-            placeholder="e.g. client@example.com"
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+            placeholder="client@example.com"
+            className="w-full h-11 bg-[#f6f5f1] border border-[#161513]/12 rounded-lg px-4 text-[#161513] text-sm placeholder-[#76736c] focus:outline-none focus:border-[#9a6320] focus:bg-white transition-colors duration-150 ease-unslop"
           />
-          <p className="text-[11px] text-slate-400 mt-1.5">
-            Our engineering team will send project progress, timeline updates, and completed PCB design files directly here.
+          <p className="text-xs text-[#76736c]">
+            Project updates and finished PCB Gerber archives are delivered to this email.
           </p>
         </div>
 
         {/* ROW 3: Circuit Diagram & Component Datasheets Upload */}
-        <div className="pt-2 border-t border-slate-100">
-          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1.5 mb-2">
-            <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
-              Upload Circuit Diagram &amp; Component Datasheets (.pdf, .png, .jpg, .jpeg) {!hasComponentReferences && <span className="text-red-500">*</span>}
+        <div className="pt-4 border-t border-[#161513]/8 space-y-2.5">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1.5">
+            <label className="block text-sm font-medium text-[#161513]">
+              Upload Circuit Diagram &amp; Component Datasheets (.pdf, .png, .jpg, .jpeg){' '}
+              {!hasComponentReferences && <span className="text-[#dc2626]">*</span>}
             </label>
-            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full self-start sm:self-auto ${hasFiles ? 'bg-emerald-100 text-emerald-800' : hasComponentReferences ? 'bg-slate-100 text-slate-500' : 'bg-amber-100 text-amber-800'}`}>
-              {hasFiles ? `✓ ${uploadedFiles.length} file(s) attached` : hasComponentReferences ? 'Optional (References provided)' : 'Required if no references *'}
+            <span
+              className={`font-mono text-xs tabular-nums ${
+                hasFiles
+                  ? 'text-[#167c4c]'
+                  : hasComponentReferences
+                    ? 'text-[#76736c]'
+                    : 'text-[#9a6320]'
+              }`}
+            >
+              {hasFiles
+                ? `${uploadedFiles.length} attached`
+                : hasComponentReferences
+                  ? 'Optional (references listed)'
+                  : 'Required without references'}
             </span>
           </div>
 
-          <p className="text-xs text-slate-500 mb-3 font-medium leading-relaxed">
-            Attach your circuit diagram or schematic sketch, plus any component pinout sheets, reference PDFs, or sensor datasheets (.pdf, .png, .jpg, .jpeg). You can attach multiple files.
+          <p className="text-xs text-[#52504a] leading-relaxed">
+            Upload Circuit Diagram &amp; Component Datasheets (.pdf, .png, .jpg, .jpeg) such as circuit sketches, pinout tables, or sensor PDFs. Multiple files supported.
           </p>
 
-          <div className="border-2 border-dashed border-slate-200 hover:border-blue-400 rounded-2xl p-6 text-center bg-slate-50/50 hover:bg-slate-50 transition-colors">
+          <div className="border border-dashed border-[#161513]/20 hover:border-[#9a6320] rounded-xl p-6 text-center bg-[#f6f5f1] transition-colors duration-150 ease-unslop">
             <input
               key={fileInputKey}
               type="file"
@@ -388,16 +419,16 @@ export default function RequestProjectPage() {
               id="circuit-file-input"
               className="hidden"
             />
-            <label htmlFor="circuit-file-input" className="cursor-pointer block space-y-2">
-              <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto text-xl shadow-inner">
-                📂
+            <label htmlFor="circuit-file-input" className="cursor-pointer block space-y-2.5">
+              <div className="w-10 h-10 bg-white border border-[#161513]/10 text-[#161513] rounded-lg flex items-center justify-center mx-auto">
+                <Upload className="w-[18px] h-[18px]" strokeWidth={1.5} />
               </div>
-              <div>
-                <span className="text-sm font-bold text-blue-600 hover:text-blue-700 underline">
-                  Click or drag to attach Circuit Diagrams, Datasheets, or Technical PDFs
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-[#9a6320] hover:text-[#7a4c14] underline underline-offset-2">
+                  Select Circuit Diagrams, Datasheets, or Technical PDFs
                 </span>
-                <p className="text-xs text-slate-400 mt-1">
-                  Supports multiple files (.pdf, .png, .jpg, .jpeg) &bull; Schematics, IC datasheets, connector pinouts, dimension notes
+                <p className="font-mono text-[11px] text-[#76736c]">
+                  .pdf, .png, .jpg, .jpeg — schematics, IC datasheets, connector pinouts
                 </p>
               </div>
             </label>
@@ -405,10 +436,15 @@ export default function RequestProjectPage() {
 
           {/* Attached Files List */}
           {uploadedFiles.length > 0 && (
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-600 px-1">
-                <span>Attached Documentation ({uploadedFiles.length}):</span>
-                <label htmlFor="circuit-file-input" className="text-blue-600 hover:underline cursor-pointer">
+            <div className="pt-2 space-y-2">
+              <div className="flex items-center justify-between text-xs text-[#52504a] px-0.5">
+                <span className="font-mono tabular-nums">
+                  Attached files ({uploadedFiles.length})
+                </span>
+                <label
+                  htmlFor="circuit-file-input"
+                  className="text-[#9a6320] hover:text-[#7a4c14] font-medium cursor-pointer"
+                >
                   + Add more files
                 </label>
               </div>
@@ -416,24 +452,41 @@ export default function RequestProjectPage() {
                 {uploadedFiles.map((file, idx) => {
                   const isPdf = file.name.toLowerCase().endsWith('.pdf');
                   const sizeKb = Math.round(file.size / 1024);
-                  const sizeStr = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
+                  const sizeStr =
+                    sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
 
                   return (
                     <div
                       key={`${file.name}_${idx}`}
-                      className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl text-xs shadow-sm hover:border-blue-200 transition-colors"
+                      className="flex items-center justify-between h-11 px-3 bg-[#f6f5f1] border border-[#161513]/10 rounded-lg text-xs"
                     >
                       <div className="flex items-center gap-2.5 truncate mr-2">
-                        <span className="text-lg flex-shrink-0">{isPdf ? '📄' : '🖼️'}</span>
-                        <span className="font-bold text-slate-800 truncate">{file.name}</span>
-                        <span className="text-[11px] text-slate-400 font-semibold flex-shrink-0">({sizeStr})</span>
+                        {isPdf ? (
+                          <FileText
+                            className="w-4 h-4 text-[#9a6320] flex-shrink-0"
+                            strokeWidth={1.5}
+                          />
+                        ) : (
+                          <ImageIcon
+                            className="w-4 h-4 text-[#52504a] flex-shrink-0"
+                            strokeWidth={1.5}
+                          />
+                        )}
+                        <span className="font-mono font-medium text-[#161513] truncate">
+                          {file.name}
+                        </span>
+                        <span className="font-mono tabular-nums text-[11px] text-[#76736c] flex-shrink-0">
+                          {sizeStr}
+                        </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleRemoveFile(idx)}
-                        className="text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded-lg hover:bg-red-50 transition-colors flex-shrink-0"
+                        className="text-[#76736c] hover:text-[#dc2626] p-1.5 rounded-md hover:bg-white transition-colors duration-150 ease-unslop flex-shrink-0 inline-flex items-center gap-1"
+                        aria-label={`Remove ${file.name}`}
                       >
-                        Remove
+                        <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                        <span className="text-xs font-medium">Remove</span>
                       </button>
                     </div>
                   );
@@ -444,109 +497,115 @@ export default function RequestProjectPage() {
         </div>
 
         {/* ROW 4: Component References & Links */}
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
-              Component List / Reference Links {!hasFiles && <span className="text-red-500">*</span>}
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap justify-between items-center gap-2">
+            <label className="block text-sm font-medium text-[#161513]">
+              Component list / reference links {!hasFiles && <span className="text-[#dc2626]">*</span>}
             </label>
-            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${hasComponentReferences ? 'bg-emerald-100 text-emerald-800' : hasFiles ? 'bg-slate-100 text-slate-500' : 'bg-amber-100 text-amber-800'}`}>
-              {hasComponentReferences ? '✓ References provided' : hasFiles ? 'Optional (Files attached above)' : 'Required if no files uploaded *'}
+            <span
+              className={`font-mono text-xs ${
+                hasComponentReferences
+                  ? 'text-[#167c4c]'
+                  : hasFiles
+                    ? 'text-[#76736c]'
+                    : 'text-[#9a6320]'
+              }`}
+            >
+              {hasComponentReferences
+                ? 'References provided'
+                : hasFiles
+                  ? 'Optional (files attached)'
+                  : 'Required without files'}
             </span>
           </div>
           <input
             type="text"
             value={componentList}
             onChange={(e) => setComponentList(e.target.value)}
-            placeholder="e.g. ESP32-WROOM-32, 5V Relay Module, DHT22 sensor, USB-C, or links to online datasheets"
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+            placeholder="ESP32-WROOM-32, 5V Relay, DHT22, USB-C receptacle, or URLs"
+            className="w-full h-11 bg-[#f6f5f1] border border-[#161513]/12 rounded-lg px-4 text-[#161513] font-mono text-sm placeholder-[#76736c] focus:outline-none focus:border-[#9a6320] focus:bg-white transition-colors duration-150 ease-unslop"
           />
         </div>
 
         {/* ROW 5: Constraints of Board (Strictly Optional) */}
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
-              Constraints of Board
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap justify-between items-center gap-2">
+            <label className="block text-sm font-medium text-[#161513]">
+              Constraints of board
             </label>
-            <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
-              Strictly Optional (Leave blank if unsure)
-            </span>
+            <span className="font-mono text-xs text-[#76736c]">Optional</span>
           </div>
           <input
             type="text"
             value={boardConstraints}
             onChange={(e) => setBoardConstraints(e.target.value)}
-            placeholder="e.g. Max size 50mm x 50mm, 4x M3 corner mounting holes, must fit inside waterproof enclosure"
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+            placeholder="Max 50mm x 50mm outline, 4x M3 corner mounting holes"
+            className="w-full h-11 bg-[#f6f5f1] border border-[#161513]/12 rounded-lg px-4 text-[#161513] text-sm placeholder-[#76736c] focus:outline-none focus:border-[#9a6320] focus:bg-white transition-colors duration-150 ease-unslop"
           />
-          <p className="text-[11px] text-slate-400 mt-1.5">
-            Strictly Optional: Mention any physical size limits or mounting requirements. If you don&apos;t have strict dimensions, our engineering team will choose the most cost-effective board size.
+          <p className="text-xs text-[#76736c]">
+            Leave blank if you have no strict mechanical bounds; we will optimize for cost and layout clearances.
           </p>
         </div>
 
         {/* ROW 6: Special Instructions / Hardware Notes */}
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
-              Special Instructions / Hardware Notes
+        <div className="space-y-1.5">
+          <div className="flex justify-between items-center gap-2">
+            <label className="block text-sm font-medium text-[#161513]">
+              Special instructions / hardware notes
             </label>
-            <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
-              Optional
-            </span>
+            <span className="font-mono text-xs text-[#76736c]">Optional</span>
           </div>
           <textarea
             rows={3}
             value={specialInstructions}
             onChange={(e) => setSpecialInstructions(e.target.value)}
-            placeholder="e.g. 12V DC input stepped down to 3.3V, wide tracks for motor current, keep antenna area clear..."
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
-          ></textarea>
+            placeholder="12V DC buck to 3.3V, wider copper traces for motor current, antenna keep-out zone"
+            className="w-full bg-[#f6f5f1] border border-[#161513]/12 rounded-lg p-4 text-[#161513] text-sm placeholder-[#76736c] focus:outline-none focus:border-[#9a6320] focus:bg-white transition-colors duration-150 ease-unslop"
+          />
         </div>
 
         {/* ROW 7: Expected Deadline */}
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
-              Expected Deadline
+        <div className="space-y-2">
+          <div className="flex justify-between items-center gap-2">
+            <label className="block text-sm font-medium text-[#161513]">
+              Expected deadline
             </label>
-            <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
-              Target Timeline
-            </span>
+            <span className="font-mono text-xs text-[#76736c]">Target timeline</span>
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
             <input
               type="date"
               value={expectedDeadline}
               onChange={(e) => setExpectedDeadline(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm flex-1"
+              className="h-11 bg-[#f6f5f1] border border-[#161513]/12 rounded-lg px-4 text-[#161513] font-mono text-sm tabular-nums focus:outline-none focus:border-[#9a6320] focus:bg-white transition-colors duration-150 ease-unslop flex-1"
             />
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => setDeadlinePreset(3)}
-                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors"
+                className="h-9 px-3 bg-[#eeede8] hover:bg-[#e4e2dc] text-[#161513] border border-[#161513]/8 rounded-lg font-mono text-xs transition-colors duration-150 ease-unslop"
               >
-                +3 Days
+                +3 days
               </button>
               <button
                 type="button"
                 onClick={() => setDeadlinePreset(7)}
-                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors"
+                className="h-9 px-3 bg-[#eeede8] hover:bg-[#e4e2dc] text-[#161513] border border-[#161513]/8 rounded-lg font-mono text-xs transition-colors duration-150 ease-unslop"
               >
-                +1 Week
+                +1 week
               </button>
               <button
                 type="button"
                 onClick={() => setDeadlinePreset(14)}
-                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors"
+                className="h-9 px-3 bg-[#eeede8] hover:bg-[#e4e2dc] text-[#161513] border border-[#161513]/8 rounded-lg font-mono text-xs transition-colors duration-150 ease-unslop"
               >
-                +2 Weeks
+                +2 weeks
               </button>
               {expectedDeadline && (
                 <button
                   type="button"
                   onClick={() => setExpectedDeadline('')}
-                  className="px-2 py-2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                  className="h-9 px-2.5 text-[#76736c] hover:text-[#161513] font-mono text-xs transition-colors duration-150 ease-unslop"
                   title="Clear deadline"
                 >
                   Clear
@@ -554,107 +613,110 @@ export default function RequestProjectPage() {
               )}
             </div>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1.5">
-            Let us know when you need the Gerber files or board prototypes completed.
+          <p className="text-xs text-[#76736c]">
+            Target delivery date for your schematic and fabrication Gerber package.
           </p>
         </div>
 
         {/* Submit Button */}
-        <div className="pt-4">
+        <div className="pt-2">
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-black py-4 px-8 rounded-2xl transition-all duration-300 shadow-xl shadow-blue-600/25 disabled:opacity-50 text-base flex items-center justify-center gap-2"
+            className="w-full h-11 px-5 bg-[#161513] hover:bg-[#2a2824] text-white font-medium rounded-lg transition-colors duration-150 ease-unslop disabled:opacity-50 text-sm flex items-center justify-center gap-2 active:scale-[0.99]"
           >
             {loading ? (
               <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Uploading Files &amp; Submitting Request...</span>
+                <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
+                <span>Uploading documentation &amp; submitting</span>
               </>
             ) : (
-              <span>Submit Project Design Request 🚀</span>
+              <>
+                <span>Submit project design request</span>
+                <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+              </>
             )}
           </button>
         </div>
-
       </form>
 
-      {/* Sleek Success Confirmation Modal */}
+      {/* Success Confirmation Modal */}
       <AnimatePresence>
         {showSuccessModal && submittedData && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-[#161513]/50 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.25 }}
-              className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 text-center relative"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-[0_12px_32px_rgba(22,21,19,0.14)] border border-[#161513]/12 space-y-5"
             >
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', damping: 15, delay: 0.1 }}
-                className="w-20 h-20 bg-gradient-to-tr from-emerald-500 to-teal-400 text-white rounded-3xl flex items-center justify-center mx-auto mb-5 text-3xl shadow-lg shadow-emerald-500/30"
-              >
-                ✓
-              </motion.div>
+              <div className="w-10 h-10 bg-[#167c4c]/10 border border-[#167c4c]/20 text-[#167c4c] rounded-lg flex items-center justify-center">
+                <CheckCircle2 className="w-5 h-5" strokeWidth={1.5} />
+              </div>
 
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-2">
-                Project Design Request Received!
-              </h3>
+              <div className="space-y-1.5">
+                <h3 className="text-xl sm:text-2xl font-medium text-[#161513] tracking-tight">
+                  Project design request received
+                </h3>
+                <p className="text-[#52504a] text-sm leading-relaxed">
+                  Thank you, <span className="font-medium text-[#161513]">{submittedData.clientName}</span>. Your schematics and documentation have been dispatched to the{' '}
+                  <span className="font-medium text-[#161513]">S SQUARE ELECTRONICS</span> engineering team.
+                </p>
+              </div>
 
-              <p className="text-slate-600 text-sm leading-relaxed mb-6 font-medium">
-                Thank you, <strong>{submittedData.clientName}</strong>! Your project requirements and documentation have been forwarded directly to the <strong>S SQUARE ELECTRONICS</strong> engineering team.
-              </p>
-
-              {/* Project Recap Card */}
-              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 mb-6 text-left space-y-2 text-xs">
-                <div className="flex justify-between py-1 border-b border-slate-200/60">
-                  <span className="text-slate-500 font-semibold">Project Name:</span>
-                  <span className="font-bold text-slate-900">{submittedData.projectName}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-200/60">
-                  <span className="text-slate-500 font-semibold">Target Timeline:</span>
-                  <span className="font-bold text-emerald-600">{submittedData.expectedDeadline}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-200/60">
-                  <span className="text-slate-500 font-semibold">Attached Documentation:</span>
-                  <span className="font-bold text-slate-800">
-                    {submittedData.fileNames.length > 0
-                      ? `${submittedData.fileNames.length} file(s) (${submittedData.fileNames.join(', ')})`
-                      : 'None attached'}
+              {/* Recap Table */}
+              <div className="bg-[#f6f5f1] border border-[#161513]/10 rounded-xl divide-y divide-[#161513]/8 px-4 text-xs">
+                <div className="flex justify-between gap-4 py-2.5">
+                  <span className="text-[#76736c]">Project name</span>
+                  <span className="font-medium text-[#161513] text-right">
+                    {submittedData.projectName}
                   </span>
                 </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-slate-500 font-semibold">Confirmation Logged:</span>
-                  <span className="font-bold text-blue-600">{submittedData.userEmail}</span>
+                <div className="flex justify-between gap-4 py-2.5">
+                  <span className="text-[#76736c]">Target timeline</span>
+                  <span className="font-mono tabular-nums text-[#167c4c] font-medium">
+                    {submittedData.expectedDeadline}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4 py-2.5">
+                  <span className="text-[#76736c]">Attached files</span>
+                  <span className="font-mono tabular-nums text-[#161513] text-right truncate max-w-[240px]">
+                    {submittedData.fileNames.length > 0
+                      ? `${submittedData.fileNames.length} (${submittedData.fileNames.join(', ')})`
+                      : 'None'}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4 py-2.5">
+                  <span className="text-[#76736c]">Confirmation email</span>
+                  <span className="font-mono text-[#9a6320]">{submittedData.userEmail}</span>
                 </div>
               </div>
 
-              <p className="text-slate-500 text-xs mb-6">
-                Our engineering team will review your circuit diagrams and component datasheets, and contact you directly if any design adjustments or timeline extensions are needed.
+              <p className="text-[#76736c] text-xs leading-relaxed">
+                Our team will review your files and contact you directly if clarification or timeline adjustments are needed.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
                 <button
                   type="button"
                   onClick={() => setShowSuccessModal(false)}
-                  className="flex-1 py-3 px-5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-blue-600/20"
+                  className="flex-1 h-10 px-4 bg-[#161513] hover:bg-[#2a2824] text-white font-medium rounded-lg text-sm transition-colors duration-150 ease-unslop"
                 >
-                  Submit Another Project
+                  Submit another project
                 </button>
                 <Link
                   href="/components"
-                  className="flex-1 py-3 px-5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-sm transition-colors border border-slate-200 text-center"
+                  className="flex-1 h-10 px-4 bg-[#eeede8] hover:bg-[#e4e2dc] text-[#161513] border border-[#161513]/10 font-medium rounded-lg text-sm transition-colors duration-150 ease-unslop inline-flex items-center justify-center gap-1.5"
                 >
-                  Browse Component Catalog &rarr;
+                  <span>Browse catalog</span>
+                  <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
                 </Link>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-
     </div>
   );
 }

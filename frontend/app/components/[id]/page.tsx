@@ -3,6 +3,14 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Download,
+  ExternalLink,
+  Loader2,
+  X,
+} from 'lucide-react';
 
 export default function ComponentDetails() {
   const params = useParams();
@@ -23,13 +31,17 @@ export default function ComponentDetails() {
         return;
       }
       try {
-        const { data, error } = await supabase.from('components').select('*').eq('id', id).maybeSingle();
+        const { data, error } = await supabase
+          .from('components')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
         if (error) {
-          console.error("Supabase error:", error);
+          console.error('Supabase error:', error);
         }
         setComp(data || null);
       } catch (err) {
-        console.error("Fetch error:", err);
+        console.error('Fetch error:', err);
       } finally {
         setLoading(false);
       }
@@ -37,14 +49,21 @@ export default function ComponentDetails() {
     fetchComponent();
   }, [id]);
 
-  const handleDownload = async (fileUrl: string | null | undefined, type: 'symbol' | 'footprint') => {
+  const handleDownload = async (
+    fileUrl: string | null | undefined,
+    type: 'symbol' | 'footprint'
+  ) => {
     if (!fileUrl) return;
 
     // 1. Trigger File Download (strips leading timestamp prefix)
     try {
       const res = await fetch(fileUrl);
       const blob = await res.blob();
-      const rawName = fileUrl.split('/').pop() || (type === 'symbol' ? `${comp?.name || 'component'}.kicad_sym` : `${comp?.name || 'component'}.kicad_mod`);
+      const rawName =
+        fileUrl.split('/').pop() ||
+        (type === 'symbol'
+          ? `${comp?.name || 'component'}.kicad_sym`
+          : `${comp?.name || 'component'}.kicad_mod`);
       const cleanName = decodeURIComponent(rawName).replace(/^\d+_/, '');
 
       const a = document.createElement('a');
@@ -55,7 +74,7 @@ export default function ComponentDetails() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(a.href);
     } catch (err) {
-      console.warn("Direct blob download failed, falling back to window.open", err);
+      console.warn('Direct blob download failed, falling back to window.open', err);
       window.open(fileUrl, '_blank');
     }
 
@@ -68,9 +87,9 @@ export default function ComponentDetails() {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
-        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-xl font-bold text-slate-600">Loading Component...</p>
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 text-sm font-mono text-[#76736c]">
+        <Loader2 className="w-6 h-6 text-[#9a6320] animate-spin" strokeWidth={1.5} />
+        <span>Loading component specification</span>
       </div>
     );
   }
@@ -78,105 +97,178 @@ export default function ComponentDetails() {
   if (!comp) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center px-4">
-        <h2 className="text-2xl font-black text-slate-800">Component Not Found</h2>
-        <p className="text-slate-500">The component you are looking for does not exist or was deleted.</p>
-        <Link href="/components" className="mt-4 px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition">
-          &larr; Back to Components
+        <h2 className="text-2xl font-medium text-[#161513]">Component not found</h2>
+        <p className="text-sm text-[#52504a] max-w-md">
+          The component record you requested does not exist or has been removed from the catalog.
+        </p>
+        <Link
+          href="/components"
+          className="mt-2 h-10 px-4 bg-[#161513] hover:bg-[#2a2824] text-white font-medium text-sm rounded-lg inline-flex items-center gap-2 transition-colors duration-150 ease-unslop"
+        >
+          <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
+          <span>Back to components</span>
         </Link>
       </div>
     );
   }
 
-  const componentPhoto = comp.component_image_url || comp.symbol_preview_url || comp.footprint_preview_url;
+  const componentPhoto =
+    comp.component_image_url || comp.symbol_preview_url || comp.footprint_preview_url;
+  const symbolExtension = comp.symbol_file_url?.toLowerCase().endsWith('.lib')
+    ? '.lib'
+    : '.kicad_sym';
 
   return (
-    <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-500">
-      <Link href="/components" className="text-blue-600 hover:text-blue-800 font-semibold mb-6 inline-flex items-center gap-2">
-        &larr; Back to Components
-      </Link>
+    <div className="space-y-6">
+      {/* Top Breadcrumb Bar */}
+      <div className="flex items-center justify-between gap-4 border-b border-[#161513]/10 pb-4">
+        <Link
+          href="/components"
+          className="text-sm font-medium text-[#52504a] hover:text-[#161513] inline-flex items-center gap-1.5 transition-colors duration-150 ease-unslop"
+        >
+          <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
+          <span>Back to components</span>
+        </Link>
 
-      <div className="flex flex-col xl:flex-row gap-8">
-        {/* LEFT SIDE: Real Hardware Photo & Details */}
-        <div className="w-full xl:w-1/3 space-y-6">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center justify-center h-64">
+        <span className="font-mono tabular-nums text-xs text-[#76736c]">
+          Catalog ID #{comp.id}
+        </span>
+      </div>
+
+      {/* Main Split Specification Layout */}
+      <div className="flex flex-col xl:flex-row gap-8 items-start">
+        {/* LEFT COLUMN: Hardware Photo & Part Metadata */}
+        <div className="w-full xl:w-[36%] space-y-5">
+          <div className="bg-white border border-[#161513]/10 rounded-xl p-6 flex items-center justify-center h-64 relative">
             {componentPhoto ? (
-              <img src={componentPhoto} alt={comp.name} className="max-h-full max-w-full object-contain mix-blend-multiply" />
+              <img
+                src={componentPhoto}
+                alt={comp.name}
+                className="max-h-full max-w-full object-contain mix-blend-multiply"
+              />
             ) : (
-              <p className="text-slate-400 font-medium">No Hardware Photo</p>
+              <p className="font-mono text-xs text-[#76736c]">No hardware image</p>
             )}
           </div>
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">{comp.name}</h1>
-            <p className="mt-4 text-slate-600 leading-relaxed text-sm md:text-base">{comp.description}</p>
+
+          <div className="space-y-2.5">
+            <h1 className="font-mono text-2xl sm:text-3xl font-medium text-[#161513] tracking-tight">
+              {comp.name}
+            </h1>
+            <p className="text-[#52504a] leading-relaxed text-sm sm:text-base font-normal">
+              {comp.description ||
+                'Verified KiCAD schematic symbol and PCB footprint available for download.'}
+            </p>
           </div>
-          <div className="flex flex-wrap gap-2 pt-2">
-            {comp.tags?.split(',').map((tag: string, index: number) => (
-              <span key={index} className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-md text-xs font-bold border border-blue-100">
-                {tag.trim()}
-              </span>
-            ))}
-          </div>
+
+          {comp.tags && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {comp.tags
+                .split(',')
+                .filter((t: string) => t.trim())
+                .map((tag: string, index: number) => (
+                  <span
+                    key={index}
+                    className="font-mono px-2.5 py-1 bg-[#eeede8] text-[#161513] rounded-md text-xs border border-[#161513]/10"
+                  >
+                    {tag.trim()}
+                  </span>
+                ))}
+            </div>
+          )}
         </div>
 
-        {/* RIGHT SIDE: Symbol & Footprint Side-by-Side */}
-        <div className="w-full xl:w-2/3 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-          <div className="bg-slate-50 border-b border-slate-200 px-6 py-4">
-            <span className="font-bold text-slate-900 border-b-2 border-blue-600 pb-1">Symbol and Footprint</span>
+        {/* RIGHT COLUMN: Symbol & Footprint Drafting Sheet */}
+        <div className="w-full xl:w-[64%] bg-white border border-[#161513]/10 rounded-xl overflow-hidden">
+          <div className="bg-[#f6f5f1] border-b border-[#161513]/10 px-5 py-3 flex items-center justify-between gap-2">
+            <span className="text-sm font-medium text-[#161513]">
+              Symbol &amp; footprint files
+            </span>
+            <span className="font-mono text-xs text-[#76736c]">KiCAD 7 / 8</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-            {/* Symbol Box */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden flex flex-col shadow-sm">
-              <div className="bg-white px-4 py-3 border-b border-slate-100">
-                <h3 className="font-bold text-slate-800">Symbol</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-[#161513]/10">
+            {/* Symbol Pane */}
+            <div className="flex flex-col">
+              <div className="px-4 py-3 border-b border-[#161513]/8 flex items-center justify-between">
+                <h2 className="text-sm font-medium text-[#161513]">Symbol</h2>
+                <span className="font-mono text-xs text-[#9a6320]">{symbolExtension}</span>
               </div>
-              {/* KiCad schematic style cream paper background with blend */}
-              <div className="flex-1 flex items-center justify-center p-4 min-h-[260px] bg-[#fcfbf7] relative">
-                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #64748b 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
+
+              {/* KiCAD schematic vellum canvas */}
+              <div className="flex-1 flex items-center justify-center p-5 min-h-[264px] bg-vellum-grid relative">
                 {comp.symbol_preview_url ? (
-                  <img 
-                    src={comp.symbol_preview_url} 
-                    alt="Symbol Preview" 
-                    className="max-h-56 object-contain mix-blend-multiply relative z-10" 
+                  <img
+                    src={comp.symbol_preview_url}
+                    alt={`${comp.name} schematic symbol preview`}
+                    className="max-h-56 object-contain mix-blend-multiply relative z-10"
                   />
                 ) : (
-                  <p className="text-slate-400 font-medium text-sm relative z-10">No Symbol Preview</p>
+                  <p className="font-mono text-xs text-[#76736c] relative z-10">
+                    No symbol preview
+                  </p>
                 )}
               </div>
-              <div className="p-4 bg-white border-t border-slate-100">
-                <button 
+
+              <div className="p-4 bg-white border-t border-[#161513]/8">
+                <button
                   type="button"
                   onClick={() => handleDownload(comp.symbol_file_url, 'symbol')}
                   disabled={!comp.symbol_file_url}
-                  className={`block w-full text-center font-bold py-3 rounded-lg transition-colors border ${comp.symbol_file_url ? 'bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-500 hover:text-white cursor-pointer active:scale-95' : 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'}`}
+                  className={`w-full h-10 px-4 rounded-lg text-sm font-medium inline-flex items-center justify-center gap-2 transition-colors duration-150 ease-unslop ${
+                    comp.symbol_file_url
+                      ? 'bg-[#161513] hover:bg-[#9a6320] text-white cursor-pointer active:scale-[0.98]'
+                      : 'bg-[#eeede8] text-[#76736c] border border-[#161513]/10 cursor-not-allowed'
+                  }`}
                 >
-                  Download Symbol (.lib)
+                  <Download className="w-4 h-4" strokeWidth={1.5} />
+                  <span>
+                    Download symbol (<span className="font-mono">{symbolExtension}</span>)
+                  </span>
                 </button>
               </div>
             </div>
 
-            {/* Footprint Box (Dark Grid Style) */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden flex flex-col shadow-sm">
-              <div className="bg-white px-4 py-3 border-b border-slate-100 flex justify-between items-center">
-                <h3 className="font-bold text-slate-800">Footprint</h3>
-                <span className="text-[10px] uppercase font-black text-slate-400 tracking-wider">2D Model</span>
+            {/* Footprint Pane */}
+            <div className="flex flex-col">
+              <div className="px-4 py-3 border-b border-[#161513]/8 flex items-center justify-between">
+                <h2 className="text-sm font-medium text-[#161513]">Footprint</h2>
+                <div className="flex items-center gap-2 font-mono text-xs">
+                  <span className="text-[#76736c]">2D layout</span>
+                  <span className="text-[#167c4c]">.kicad_mod</span>
+                </div>
               </div>
-              <div className="flex-1 flex items-center justify-center p-4 min-h-[260px] bg-slate-950 relative">
-                <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
+
+              {/* Soldermask dark CAD canvas */}
+              <div className="flex-1 flex items-center justify-center p-5 min-h-[264px] bg-soldermask-grid relative">
                 {comp.footprint_preview_url ? (
-                  <img src={comp.footprint_preview_url} alt="Footprint Preview" className="max-h-56 object-contain relative z-10" />
+                  <img
+                    src={comp.footprint_preview_url}
+                    alt={`${comp.name} PCB footprint preview`}
+                    className="max-h-56 object-contain relative z-10"
+                  />
                 ) : (
-                  <p className="text-slate-500 font-medium text-sm relative z-10">No Footprint Preview</p>
+                  <p className="font-mono text-xs text-[#8f8c84] relative z-10">
+                    No footprint preview
+                  </p>
                 )}
               </div>
-              <div className="p-4 bg-white border-t border-slate-100">
-                <button 
+
+              <div className="p-4 bg-white border-t border-[#161513]/8">
+                <button
                   type="button"
                   onClick={() => handleDownload(comp.footprint_file_url, 'footprint')}
                   disabled={!comp.footprint_file_url}
-                  className={`block w-full text-center font-bold py-3 rounded-lg transition-colors border ${comp.footprint_file_url ? 'bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-500 hover:text-white cursor-pointer active:scale-95' : 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'}`}
+                  className={`w-full h-10 px-4 rounded-lg text-sm font-medium inline-flex items-center justify-center gap-2 transition-colors duration-150 ease-unslop ${
+                    comp.footprint_file_url
+                      ? 'bg-[#161513] hover:bg-[#167c4c] text-white cursor-pointer active:scale-[0.98]'
+                      : 'bg-[#eeede8] text-[#76736c] border border-[#161513]/10 cursor-not-allowed'
+                  }`}
                 >
-                  Download Footprint (.kicad_mod)
+                  <Download className="w-4 h-4" strokeWidth={1.5} />
+                  <span>
+                    Download footprint (<span className="font-mono">.kicad_mod</span>)
+                  </span>
                 </button>
               </div>
             </div>
@@ -186,63 +278,64 @@ export default function ComponentDetails() {
 
       {/* Post-Download Tutorial Popup Modal */}
       {downloadPopup && downloadPopup.isOpen && (
-        <div 
-          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+        <div
+          className="fixed inset-0 z-50 bg-[#161513]/50 backdrop-blur-[2px] flex items-center justify-center p-4"
           onClick={() => setDownloadPopup(null)}
         >
-          <div 
-            className="bg-white rounded-3xl p-8 sm:p-10 max-w-md w-full shadow-2xl border border-slate-100 text-center relative animate-in zoom-in-95 duration-200"
+          <div
+            className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full border border-[#161513]/12 shadow-[0_8px_24px_rgba(22,21,19,0.12)] relative"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close Button (X) */}
+            {/* Close Button */}
             <button
               type="button"
               onClick={() => setDownloadPopup(null)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition-colors p-2 rounded-full hover:bg-slate-100"
+              className="absolute top-4 right-4 w-8 h-8 rounded-lg text-[#76736c] hover:text-[#161513] hover:bg-[#eeede8] inline-flex items-center justify-center transition-colors duration-150 ease-unslop"
               aria-label="Close dialog"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X className="w-[18px] h-[18px]" strokeWidth={1.5} />
             </button>
 
-            {/* Icon */}
-            <div className="w-16 h-16 bg-blue-50 border border-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-5 text-2xl shadow-inner">
-              🎉
-            </div>
+            <div className="space-y-4">
+              <div className="w-10 h-10 rounded-lg bg-[#167c4c]/10 border border-[#167c4c]/20 text-[#167c4c] flex items-center justify-center">
+                <CheckCircle2 className="w-5 h-5" strokeWidth={1.5} />
+              </div>
 
-            {/* Title */}
-            <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
-              Thanks for downloading!
-            </h3>
+              <div className="space-y-1.5">
+                <h3 className="text-xl font-medium text-[#161513] tracking-tight">
+                  Download started
+                </h3>
+                <p className="text-[#52504a] text-sm leading-relaxed">
+                  {downloadPopup.type === 'symbol'
+                    ? 'Follow the Symbol Tutorial to import this .kicad_sym library file into KiCAD.'
+                    : 'Follow the Footprint Tutorial to add this .kicad_mod file to your KiCAD library folder.'}
+                </p>
+              </div>
 
-            {/* Text */}
-            <p className="text-slate-600 text-base font-medium mb-6 leading-relaxed">
-              {downloadPopup.type === 'symbol' 
-                ? 'How to add this symbol in KiCAD?' 
-                : 'How to add this PCB footprint in your KiCAD software?'}
-            </p>
+              <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
+                <a
+                  href={
+                    downloadPopup.type === 'symbol'
+                      ? '/tutorial/symbol'
+                      : '/tutorial/footprint'
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setDownloadPopup(null)}
+                  className="flex-1 h-10 px-4 bg-[#161513] hover:bg-[#2a2824] text-white font-medium text-sm rounded-lg inline-flex items-center justify-center gap-2 transition-colors duration-150 ease-unslop active:scale-[0.98]"
+                >
+                  <span>Open tutorial</span>
+                  <ExternalLink className="w-4 h-4" strokeWidth={1.5} />
+                </a>
 
-            {/* Tutorial Button (opens tutorial in new tab) */}
-            <div className="space-y-3">
-              <a
-                href={downloadPopup.type === 'symbol' ? '/tutorial/symbol' : '/tutorial/footprint'}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setDownloadPopup(null)}
-                className="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-black text-base rounded-xl shadow-lg shadow-blue-600/25 transition-all flex items-center justify-center gap-2 active:scale-95"
-              >
-                <span>Tutorial</span>
-                <span aria-hidden="true">&rarr;</span>
-              </a>
-
-              <button
-                type="button"
-                onClick={() => setDownloadPopup(null)}
-                className="w-full py-2.5 text-slate-400 hover:text-slate-600 text-sm font-semibold transition-colors"
-              >
-                Dismiss
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setDownloadPopup(null)}
+                  className="h-10 px-4 bg-[#eeede8] hover:bg-[#e4e2dc] text-[#161513] font-medium text-sm rounded-lg transition-colors duration-150 ease-unslop"
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
           </div>
         </div>

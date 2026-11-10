@@ -4,6 +4,28 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { motion, type Variants } from 'framer-motion';
+import { ArrowRight, Loader2, Search, X } from 'lucide-react';
+
+const fadeEase = [0.22, 1, 0.36, 1] as const;
+
+const gridVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.04,
+    },
+  },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.32, ease: fadeEase },
+  },
+};
 
 function CatalogContent() {
   const searchParams = useSearchParams();
@@ -32,161 +54,157 @@ function CatalogContent() {
       }
       const { data, error } = await query;
       if (error) {
-        console.error("Supabase fetch error:", error);
+        console.error('Supabase fetch error:', error);
       }
       setComponents(data || []);
     } catch (err) {
-      console.error("Fetch exception:", err);
+      console.error('Fetch exception:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const gridVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.07,
-      },
-    },
-  };
-
-  const cardVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { duration: 0.45, ease: 'easeOut' }
-    },
-  };
-
   return (
-    <div className="space-y-10 relative z-10">
-      
-      {/* Header and Search Bar */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+    <div className="space-y-8">
+      {/* Header & Search Panel */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.55 }}
-        className="text-center space-y-6 py-12 px-4 bg-white/80 border border-slate-200/80 backdrop-blur-md rounded-3xl shadow-xl shadow-slate-200/40 relative overflow-hidden"
+        transition={{ duration: 0.35, ease: fadeEase }}
+        className="bg-white border border-[#161513]/10 rounded-2xl p-6 sm:p-8 space-y-6"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/60 to-emerald-50/60 opacity-60"></div>
-        <div className="relative z-10 max-w-3xl mx-auto">
-          <span className="inline-block text-xs uppercase font-extrabold tracking-widest text-blue-600 bg-blue-50 border border-blue-100 rounded-full px-4 py-1.5 mb-3">
-            Hardware Library
-          </span>
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900 leading-tight">
-            PCB Components Catalog
-          </h1>
-          <p className="text-slate-600 text-base sm:text-lg max-w-2xl mx-auto mt-3 font-medium leading-relaxed">
-            Search, preview, and download verified KiCAD symbols (<code className="text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded text-sm">.kicad_sym</code>) and footprints (<code className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-sm">.kicad_mod</code>).
-          </p>
-          
-          <div className="max-w-xl mx-auto mt-8 relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
-            <div className="relative flex items-center bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-              <span className="pl-5 text-slate-400 text-lg">🔍</span>
-              <input 
-                type="text" 
-                placeholder="Search by part number (e.g. ESP32, ATmega328P) or tags..." 
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-transparent py-4 px-4 text-slate-900 placeholder-slate-400 focus:outline-none font-medium text-base"
-              />
-              {search && (
-                <button 
-                  onClick={() => setSearch('')}
-                  className="pr-5 text-slate-400 hover:text-slate-600 text-sm font-bold"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+          <div className="space-y-2 max-w-2xl">
+            <p className="font-mono text-xs text-[#9a6320] tabular-nums">
+              Library · KiCAD 7 / 8
+            </p>
+            <h1 className="text-3xl sm:text-4xl font-medium tracking-[-0.02em] text-[#161513]">
+              PCB components catalog
+            </h1>
+            <p className="text-[#52504a] text-sm sm:text-base leading-relaxed font-normal">
+              Search, preview, and download verified schematic symbols (
+              <code className="font-mono text-xs px-1.5 py-0.5 bg-[#eeede8] text-[#9a6320] rounded border border-[#161513]/10">
+                .kicad_sym
+              </code>
+              ) and board footprints (
+              <code className="font-mono text-xs px-1.5 py-0.5 bg-[#eeede8] text-[#167c4c] rounded border border-[#161513]/10">
+                .kicad_mod
+              </code>
+              ).
+            </p>
           </div>
+
+          <div className="font-mono text-xs text-[#76736c] tabular-nums">
+            Verified IPC / manufacturer specs
+          </div>
+        </div>
+
+        {/* Technical Search Input */}
+        <div className="flex items-center h-11 bg-[#f6f5f1] border border-[#161513]/12 focus-within:border-[#9a6320] focus-within:bg-white rounded-lg px-3.5 gap-2.5 transition-colors duration-150 ease-unslop">
+          <Search className="w-4 h-4 text-[#76736c] flex-shrink-0" strokeWidth={1.5} />
+          <input
+            type="text"
+            placeholder="Search by part number or tag (e.g. ESP32, ATmega328P)"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-transparent text-sm text-[#161513] placeholder-[#76736c] focus:outline-none font-mono"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              aria-label="Clear search"
+              className="w-7 h-7 rounded-md text-[#76736c] hover:text-[#161513] hover:bg-[#eeede8] inline-flex items-center justify-center transition-colors duration-150 ease-unslop flex-shrink-0"
+            >
+              <X className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+          )}
         </div>
       </motion.div>
 
-      {/* Components Count Bar */}
-      <div className="flex justify-between items-center px-2">
-        <h2 className="text-xl font-bold text-slate-800">
-          Available Components {components.length > 0 && <span className="text-slate-400 text-sm font-normal">({components.length})</span>}
-        </h2>
-        <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-          <Link 
-            href="/request/component" 
-            className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center gap-1"
-          >
-            <span>Can&apos;t find a component? Request it</span>
-            <span>&rarr;</span>
-          </Link>
-        </motion.div>
+      {/* Count & Request Bar */}
+      <div className="flex flex-wrap justify-between items-center gap-3 px-1">
+        <div className="flex items-baseline gap-2.5">
+          <h2 className="text-lg font-medium text-[#161513]">Available components</h2>
+          {!loading && (
+            <span className="font-mono text-xs text-[#76736c] tabular-nums">
+              {components.length} {components.length === 1 ? 'part' : 'parts'}
+            </span>
+          )}
+        </div>
+
+        <Link
+          href="/request/component"
+          className="text-sm font-medium text-[#9a6320] hover:text-[#7a4c14] inline-flex items-center gap-1.5 transition-colors duration-150 ease-unslop"
+        >
+          <span>Request a missing component</span>
+          <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+        </Link>
       </div>
 
       {/* Components Grid */}
       {loading ? (
-        <div className="text-center py-24 text-slate-400 font-bold text-lg flex flex-col items-center gap-3">
-          <div className="w-9 h-9 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <span>Loading catalog...</span>
+        <div className="py-20 text-[#76736c] text-sm font-mono flex flex-col items-center gap-3">
+          <Loader2 className="w-6 h-6 text-[#9a6320] animate-spin" strokeWidth={1.5} />
+          <span>Loading catalog index</span>
         </div>
       ) : (
-        <motion.div 
+        <motion.div
           key={search}
           variants={gridVariants}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
         >
-          {components.map(comp => {
-            const displayImage = comp.component_image_url || comp.symbol_preview_url || comp.footprint_preview_url;
-            
+          {components.map((comp) => {
+            const displayImage =
+              comp.component_image_url || comp.symbol_preview_url || comp.footprint_preview_url;
+
             return (
-              <motion.div 
-                key={comp.id}
-                variants={cardVariants}
-                whileHover={{ y: -7, transition: { duration: 0.2, ease: 'easeOut' } }}
-                className="h-full"
-              >
-                <Link href={`/components/${comp.id}`} className="group block h-full">
-                  <div className="bg-white border border-slate-200/80 rounded-3xl overflow-hidden transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-blue-900/10 flex flex-col h-full">
-                    <div className="h-56 bg-slate-50 relative flex items-center justify-center border-b border-slate-100 p-6 overflow-hidden">
+              <motion.div key={comp.id} variants={cardVariants} className="h-full">
+                <Link href={`/components/${comp.id}`} className="group block h-full rounded-xl">
+                  <div className="bg-white border border-[#161513]/10 hover:border-[#161513]/25 rounded-xl overflow-hidden transition-[border-color,box-shadow] duration-150 ease-unslop hover:shadow-[0_4px_16px_rgba(22,21,19,0.06)] flex flex-col h-full">
+                    {/* Preview Well */}
+                    <div className="h-52 bg-vellum-grid relative flex items-center justify-center border-b border-[#161513]/10 p-5 overflow-hidden">
                       {displayImage ? (
-                        <img 
-                          src={displayImage} 
-                          alt={comp.name} 
-                          className="w-full h-full object-contain mix-blend-multiply group-hover:scale-108 transition-transform duration-500 ease-out" 
+                        <img
+                          src={displayImage}
+                          alt={comp.name}
+                          className="w-full h-full object-contain mix-blend-multiply"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-300 font-semibold text-sm">
-                          No Preview Available
-                        </div>
+                        <span className="font-mono text-xs text-[#76736c]">No preview</span>
                       )}
-                      <span className="absolute top-4 right-4 text-[11px] font-black uppercase tracking-wider bg-white/90 backdrop-blur-sm text-slate-600 border border-slate-200/60 px-2.5 py-1 rounded-full shadow-sm">
-                        KiCAD
+
+                      <span className="absolute top-3 right-3 font-mono tabular-nums text-[11px] font-medium bg-white/95 text-[#52504a] border border-[#161513]/10 px-2 py-0.5 rounded">
+                        ID #{comp.id}
                       </span>
                     </div>
-                    <div className="p-6 flex-1 flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-xl font-bold text-slate-900 mb-2 tracking-tight group-hover:text-blue-600 transition-colors">
+
+                    {/* Metadata */}
+                    <div className="p-5 flex-1 flex flex-col justify-between gap-4">
+                      <div className="space-y-1.5">
+                        <h3 className="font-mono text-base font-medium text-[#161513] tracking-tight group-hover:text-[#9a6320] transition-colors duration-150 ease-unslop">
                           {comp.name}
                         </h3>
-                        <p className="text-slate-500 text-sm line-clamp-2 leading-relaxed mb-4 font-normal">
-                          {comp.description || 'Verified KiCad symbol and footprint available for free download.'}
+                        <p className="text-[#52504a] text-sm line-clamp-2 leading-relaxed font-normal">
+                          {comp.description ||
+                            'Verified KiCAD symbol and footprint available for download.'}
                         </p>
                       </div>
-                      
-                      <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                        <div className="flex gap-2">
-                          <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg font-bold border border-blue-100/60">
-                            Symbol
+
+                      <div className="pt-3.5 border-t border-[#161513]/8 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 font-mono text-[11px]">
+                          <span className="px-2 py-0.5 rounded bg-[#eeede8] text-[#9a6320] border border-[#161513]/8">
+                            .kicad_sym
                           </span>
-                          <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg font-bold border border-emerald-100/60">
-                            Footprint
+                          <span className="px-2 py-0.5 rounded bg-[#eeede8] text-[#167c4c] border border-[#161513]/8">
+                            .kicad_mod
                           </span>
                         </div>
-                        <span className="text-xs font-bold text-slate-400 group-hover:text-blue-600 transition-colors inline-flex items-center gap-1">
-                          <span>Details</span>
-                          <span>&rarr;</span>
+                        <span className="text-xs font-medium text-[#76736c] group-hover:text-[#161513] transition-colors duration-150 ease-unslop inline-flex items-center gap-1">
+                          <span>Inspect</span>
+                          <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
                         </span>
                       </div>
                     </div>
@@ -195,26 +213,24 @@ function CatalogContent() {
               </motion.div>
             );
           })}
+
           {components.length === 0 && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="col-span-full text-center bg-white border border-slate-200 rounded-3xl py-16 px-4 shadow-sm"
-            >
-              <span className="text-4xl block mb-3">🔍</span>
-              <h3 className="text-lg font-bold text-slate-800 mb-1">No components found</h3>
-              <p className="text-slate-500 text-sm max-w-md mx-auto mb-6">
-                We couldn&apos;t find any components matching &quot;{search}&quot;. You can submit a request and our engineers will create it for you.
+            <div className="col-span-full text-center bg-white border border-[#161513]/10 rounded-2xl py-16 px-4">
+              <div className="w-10 h-10 rounded-lg bg-[#eeede8] border border-[#161513]/10 text-[#52504a] flex items-center justify-center mx-auto mb-4">
+                <Search className="w-[18px] h-[18px]" strokeWidth={1.5} />
+              </div>
+              <h3 className="text-lg font-medium text-[#161513] mb-1.5">No matching components</h3>
+              <p className="text-[#52504a] text-sm max-w-md mx-auto mb-6">
+                No parts matched <span className="font-mono text-[#161513]">&quot;{search}&quot;</span>. Submit a part request and our engineering desk will prepare the library files.
               </p>
-              <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} className="inline-block">
-                <Link 
-                  href="/request/component" 
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 text-sm transition-all"
-                >
-                  Request This Component &rarr;
-                </Link>
-              </motion.div>
-            </motion.div>
+              <Link
+                href="/request/component"
+                className="inline-flex items-center gap-2 h-10 px-4 bg-[#161513] hover:bg-[#2a2824] text-white font-medium rounded-lg text-sm transition-colors duration-150 ease-unslop active:scale-[0.98]"
+              >
+                <span>Request this component</span>
+                <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+              </Link>
+            </div>
           )}
         </motion.div>
       )}
@@ -226,9 +242,9 @@ export default function ComponentsCatalogPage() {
   return (
     <Suspense
       fallback={
-        <div className="text-center py-24 text-slate-400 font-bold text-lg flex flex-col items-center gap-3">
-          <div className="w-9 h-9 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <span>Loading catalog...</span>
+        <div className="py-20 text-[#76736c] text-sm font-mono flex flex-col items-center gap-3">
+          <Loader2 className="w-6 h-6 text-[#9a6320] animate-spin" strokeWidth={1.5} />
+          <span>Loading catalog index</span>
         </div>
       }
     >
